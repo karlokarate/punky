@@ -1,0 +1,91 @@
+name: diabetes_kids_app
+description: Diabetes-Kinder-App mit Nightscout, Alarm und Hintergrundservice
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Lokalisierung
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.2
+
+  # Netzwerk
+  http: ^1.4.0
+
+  # Notifications
+  awesome_notifications: ^0.10.1
+  telephony: ^0.2.0
+
+  # Hintergrundtasks
+  workmanager: ^0.8.0
+
+  # Speicherung & Dateien
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.5
+  flutter_secure_storage: ^9.0.0
+  sqflite: ^2.4.2
+
+  # Berechtigungen & Medien
+  permission_handler: ^11.3.1
+  record: ^6.0.0
+  image_picker: ^1.0.7
+
+  # Firebase
+  firebase_core: ^2.30.0
+  firebase_messaging: ^14.7.16
+
+  # Event- und Datenfluss
+  rxdart: ^0.27.7
+  event_bus: ^2.0.1
+  yaml: ^3.1.2
+
+  # Animation
+  lottie: ^3.3.1
+
+  # Verschiedenes (explizite Versionsbindung empfohlen)
+  path: any
+  flutter_local_notifications: any
+  vibration: any
+  just_audio: any
+  hive: any
+  tflite_flutter: any
+  meta: any
+  speech_to_text: any
+  provider: any
+  url_launcher: any
+
+  # Stringvergleich (statt levenshtein)
+  string_similarity: ^2.0.0
+
+  # Offline-Spracherkennung mit Vosk
+  vosk_flutter:
+    git:
+      url: https://github.com/alphacep/vosk-flutter.git
+      tag: 0.3.48
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - lib/assets/config/settings_schema.yaml
+    - lib/assets/config/portion_units_de.yaml
+    - lib/assets/db/products.sqlite
+    - assets/i18n/
+    - assets/models/vosk-model-small-de-0.15/
+
+dependency_overrides:
+  # Erzwingt Kompatibilität zwischen vosk_flutter (archive ^3.x) und lottie (archive ^4.x)
+  archive: ^4.0.0

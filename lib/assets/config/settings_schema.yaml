@@ -1,0 +1,215 @@
+groups:
+  - title: ai
+    label: ai.title
+    fields:
+      - key: ai.enabled
+        type: bool
+        label: ai.enabled
+        default: true
+
+      - key: ai.openai_api_key
+        type: text
+        label: ai.openai_api_key
+        secure: true
+
+      - key: ai.model
+        type: dropdown
+        label: ai.model
+        options: [gpt-3.5-turbo, gpt-4, gpt-4o, gpt-4-turbo]
+        default: gpt-4o
+
+      - key: ai.max_tokens
+        type: int
+        label: ai.max_tokens
+        default: 400000
+
+      - key: ai.restrict_child
+        type: bool
+        label: ai.restrict_child
+        default: false
+
+  - title: nightscout
+    label: nightscout.title
+    fields:
+      - key: nightscout.nightscout_url
+        type: text
+        label: nightscout.url
+        default: ''
+
+      - key: nightscout.api_key
+        type: text
+        label: nightscout.api_key
+        secure: true
+
+  - title: communication
+    label: communication.title
+    fields:
+      - key: parents.sms_number
+        type: text
+        label: communication.sms_number
+
+      - key: communication.sms_enabled
+        type: bool
+        label: communication.sms_enabled
+        default: true
+
+      - key: communication.push_enabled
+        type: bool
+        label: communication.push_enabled
+        default: true
+
+      - key: communication.parent_approval_bolus
+        type: bool
+        label: communication.parent_approval_bolus
+        default: true
+
+      - key: communication.parent_approval_snack
+        type: bool
+        label: communication.parent_approval_snack
+        default: true
+
+  - title: alarms
+    label: alarms.title
+    fields:
+      - key: alarms.hypo_enabled
+        type: bool
+        label: alarms.hypo_enabled
+        default: true
+
+      - key: alarms.hypo_threshold
+        type: int
+        label: alarms.hypo_threshold
+        default: 70
+
+      - key: alarms.hypo_delta
+        type: int
+        label: alarms.hypo_delta
+        default: 10
+
+      - key: alarms.no_data_enabled
+        type: bool
+        label: alarms.no_data_enabled
+        default: true
+
+      - key: alarms.no_data_timeout
+        type: int
+        label: alarms.no_data_timeout
+        default: 20
+
+      - key: alarms.pump_offline_enabled
+        type: bool
+        label: alarms.pump_offline_enabled
+        default: true
+
+      - key: alarms.pump_offline_timeout
+        type: int
+        label: alarms.pump_offline_timeout
+        default: 20
+
+      - key: alarms.quiet_time_start
+        type: time
+        label: alarms.quiet_time_start
+
+      - key: alarms.quiet_time_end
+        type: time
+        label: alarms.quiet_time_end
+
+  - title: gamification
+    label: gamification.title
+    fields:
+      - key: gamification.rewards_enabled
+        type: bool
+        label: gamification.rewards_enabled
+        default: true
+
+      - key: gamification.points_per_input
+        type: int
+        label: gamification.points_per_input
+        default: 1
+
+      - key: gamification.level_up_points
+        type: int
+        label: gamification.level_up_points
+        default: 1000
+
+      - key: gamification.snack_bonus
+        type: int
+        label: gamification.snack_bonus
+        default: 5
+
+      - key: gamification.snack_penalty
+        type: int
+        label: gamification.snack_penalty
+        default: 1
+
+      - key: gamification.max_snacks_per_day
+        type: int
+        label: gamification.max_snacks_per_day
+        default: 5
+
+  - title: limits
+    label: limits.title
+    fields:
+      - key: limits.bz_min
+        type: int
+        label: limits.bz_min
+        default: 70
+
+      - key: limits.bz_max
+        type: int
+        label: limits.bz_max
+        default: 180
+
+      - key: limits.kh_warn_limit
+        type: int
+        label: limits.kh_warn_limit
+        default: 50
+
+  - title: devices
+    label: devices.title
+    fields:
+      - key: devices.dexcom_active
+        type: bool
+        label: devices.dexcom_active
+        default: true
+
+      - key: devices.omnipod_active
+        type: bool
+        label: devices.omnipod_active
+        default: true
+
+      - key: devices.pod_low_reservoir_warn_hours
+        type: int
+        label: devices.pod_low_reservoir_warn_hours
+        default: 6
+
+      - key: devices.pod_expiry_warn_hours
+        type: int
+        label: devices.pod_expiry_warn_hours
+        default: 12
+
+  - title: security
+    label: security.title
+    fields:
+      - key: security.child_lock_enabled
+        type: bool
+        label: security.child_lock_enabled
+        default: true
+
+      - key: security.emergency_pin
+        type: text
+        label: security.emergency_pin
+        secure: true
+
+  - title: debug
+    label: debug.title
+    fields:
+      - key: debug.debug_enabled
+        type: bool
+        label: debug.debug_enabled
+        default: false
+
+      - key: debug.test_mode
+        type: bool
+        label: debug.test_mode
+        default: false

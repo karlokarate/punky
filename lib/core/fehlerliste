@@ -1,0 +1,67 @@
+## 🔎 Neue Fehleranalyse (Flutter analyze, Juli)
+
+---
+
+### 🔴 Kritische Fehler
+
+| Fehler                                                       | Ursache                                                                               | Lösung                                                                                                                        |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `MealReviewComponent` nicht gefunden / kein Typ              | mehrfach definiert, nicht global importiert                                           | Nur noch in `app_events.dart` halten und **alle anderen Importe löschen**, stattdessen: `import '../events/app_events.dart';` |
+| `FoodComponent` doppelt definiert (ambiguous import)         | sowohl in `ingredient_ai_service.dart` als auch in `app_events.dart`                  | Nur in `app_events.dart` behalten, aus `ingredient_ai_service.dart` entfernen                                                 |
+| `MealReviewComponent` nicht als Methode nutzbar              | wird als Funktion aufgerufen statt als Konstruktor (z. B. `MealReviewComponent(...)`) | Import/Definition prüfen, nur korrekt aus `app_events.dart` nutzen                                                            |
+| `List<ParsedItem>` zu `List<MealReviewComponent>`            | falscher Rückgabetyp aus `TextParser`                                                 | Entweder Mapping ergänzen oder Rückgabetyp des Parsers anpassen                                                               |
+| `MatchedComponent` zu `MealReviewComponent` nicht kompatibel | wie oben                                                                              | Entweder Mapping mit `.map(...)` oder Konstruktor nutzen                                                                      |
+
+---
+
+### 🟠 Warnungen (strukturell, Style)
+
+| Warnung                                                                         | Lösung                                                                                    |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| unused\_import                                                                  | Alle ungenutzten Imports löschen (z. B. `meal_analyzer.dart` in `child_home_screen.dart`) |
+| deprecated: `.withOpacity()`                                                    | Verwenden von `.withAlpha()` oder `.withOpacity(value)` vermeiden bei falschem Datentyp   |
+| nicht verwendete Methoden/Felder (`_bonusCounter`, `_showGamificationSnackbar`) | entfernen oder verwenden                                                                  |
+| konstante Namen (z. B. `WORK_BZ_TASK`) nicht in camelCase                       | in `camelCase` umbenennen oder als `const WORK_BZ_TASK = ...` oben abtrennen              |
+
+---
+
+### 🟡 Info-Hinweise
+
+| Hinweis                                      | Empfehlung                                                     |
+| -------------------------------------------- | -------------------------------------------------------------- |
+| `use_build_context_synchronously`            | `if (!mounted) return;` nach jedem `await` in Widgets einbauen |
+| `Don't invoke 'print' in production`         | durch Logging-System oder `debugPrint` ersetzen                |
+| `Angle brackets will be interpreted as HTML` | in Kommentaren/Strings: `<`, `>` escapen oder vermeiden        |
+
+---
+
+### 🛠 Neue Strategie zur Fehlerbeseitigung
+
+#### 1. Struktur bereinigen
+
+* `MealReviewComponent` **ausschließlich in `app_events.dart`** halten → überall importieren
+* `FoodComponent` ebenso
+* alle betroffenen Module bereinigen:
+
+  * `speech_service.dart`
+  * `image_input_service.dart`
+  * `meal_analyzer.dart`
+  * `product_matcher.dart`
+  * `meal_review_screen.dart`
+
+#### 2. Parser- und Konvertierungslogik anpassen
+
+* `TextParser.parse(...)` gibt aktuell `List<ParsedItem>` → **muss gemappt** werden zu `FoodComponent`
+* zentrale Funktion `convertParsedToFoodComponent(List<ParsedItem>) → List<FoodComponent>` anlegen
+
+#### 3. Tests und Views reparieren
+
+* `test/screens/meal_review_screen_test.dart`: gleiche `MealReviewComponent`-Importkorrektur
+
+#### 4. Einzelne Typprobleme durch gezielte `.map(...)`-Zuweisung lösen
+
+#### 5. Unused- & BuildContext-Warnungen automatisch beseitigen mit Linterregel
+
+---
+
+👉 Sobald du „beginne mit 1“ schreibst, bereinige ich `speech_service.dart` und alle Importe dort gemäß dieser Strategie.

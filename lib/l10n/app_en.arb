@@ -1,0 +1,376 @@
+{
+  "@@locale": "en",
+  "aiEnabled": "GPT enable",
+  "aiMaxTokens": "Token limit",
+  "aiModel": "GPT‑Modell",
+  "aiOpenaiApiKey": "OpenAI API key",
+  "aiRestrictChild": "Restrict child usage",
+  "aiTitle": "Artificial Intelligence",
+  "alarmsHypoDelta": "Drop rate‑Alarm (mg/dl)",
+  "alarmsHypoEnabled": "Hypo‑Alarm enable",
+  "alarmsHypoThreshold": "Hypo‑Threshold (mg/dl)",
+  "alarmsNoDataEnabled": "Kein‑Daten‑Alarm aktiv",
+  "alarmsNoDataTimeout": "Timeout bei fehlenden Daten (min)",
+  "alarmsPumpOfflineEnabled": "Pumpe offline‑Alarm aktiv",
+  "alarmsPumpOfflineTimeout": "Timeout bei Pumpenverbindung (min)",
+  "alarmsQuietEnd": "Ruhezeit Ende",
+  "alarmsQuietStart": "Ruhezeit Start",
+  "alarmsTitle": "Alarms & Warningen",
+  "avatarAccessory": "Zubehör",
+  "avatarBackground": "Hintergrand",
+  "avatarBody": "Körper",
+  "avatarHead": "Kopf",
+  "avatarLayerTitle": "Avatar",
+  "avatarTitle": "Avatar",
+  "avatarWeapon": "Waffe",
+  "bolusNoteAuto": "Auto‑Bolus via BolusEngine",
+  "bolusReasonAaps": "AAPS‑Faktor {ratio} g/IE",
+  "@bolusReasonAaps": {
+    "placeholders": {
+      "ratio": {}
+    }
+  },
+  "bolusReasonManual": "carbs {carbs} ÷ Faktor {ratio}",
+  "@bolusReasonManual": {
+    "placeholders": {
+      "carbs": {},
+      "ratio": {}
+    }
+  },
+  "carbAnalysisReasonDefault": "carbs {carbs} ÷ Faktor {ratio}",
+  "@carbAnalysisReasonDefault": {
+    "placeholders": {
+      "carbs": {},
+      "ratio": {}
+    }
+  },
+  "carbAnalysisWarnExcessive": "Check die Eingabe – carbs wirken ungewöhnlich hoch.",
+  "carbAnalysisWarnFuzzy": "⚠️ Einige Produkte wurden nur unscharf gefanden.",
+  "carbAnalysisWarnHigh": "Meal enthält viele Kohlenhydrate ({carbs} g).",
+  "@carbAnalysisWarnHigh": {
+    "placeholders": {
+      "carbs": {}
+    }
+  },
+  "commonCancel": "Abbrechen",
+  "commonDetails": "Details",
+  "commonOk": "OK",
+  "commParentApprovalBolus": "Bolus braucht Parentsfreigabe",
+  "commParentApprovalSnack": "Snack braucht Parentsfreigabe",
+  "commPushEnabled": "Push notifications erlauben",
+  "commSmsEnabled": "SMS an Parents erlauben",
+  "commSmsNumber": "Parents Notfallnummer",
+  "commTitle": "Communication & Freigabe",
+  "devicesDexcomActive": "Dexcom verwenden",
+  "devicesOmnipodActive": "Omnipod verwenden",
+  "devicesPodExpiryWarn": "Pod Ablaufwarnung ab (h)",
+  "devicesPodReservoirWarn": "Reservoir‑Warning ab (h)",
+  "devicesTitle": "Verbandene Geräte",
+  "debugEnabled": "Debugmodus aktiv",
+  "debugTestMode": "Testmodus aktiv",
+  "debugTitle": "Debug & Test",
+  "gameLevelUpPoints": "Level‑Up ab Pointsn",
+  "gameMaxSnacksPerDay": "Snacks pro Tag (max)",
+  "gamePointsPerInput": "Points pro Eintrag",
+  "gameRewardReasonBonus": "Bonus",
+  "gameRewardReasonBolus": "Bolusgabe",
+  "gameRewardReasonGuess": "carbs‑Schätzspiel (Abweichung: {diff} g)",
+  "@gameRewardReasonGuess": {
+    "placeholders": {
+      "diff": {}
+    }
+  },
+  "gameRewardReasonInput": "Eingabe",
+  "gameRewardReasonLevelUp": "Level‑Up!",
+  "gameRewardReasonMeal": "Meal eingetragen",
+  "gameRewardReasonPenalty": "Abzug",
+  "gameRewardReasonSnack": "Snack eingetragen",
+  "gameRewardReasonSnackBonus": "Snack‑Bonus! {count} Snacks heute",
+  "@gameRewardReasonSnackBonus": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "gameRewardReasonSnackPenalty": "Zu viele Snacks heute!",
+  "gameRewardsEnabled": "Belohnungen enable",
+  "gameSnackBonus": "Snack Bonuspunkte",
+  "gameSnackPenalty": "Snack‑Pointsabzug",
+  "gameTitle": "Gamification & Points",
+  "guessBtnContinue": "Weiter",
+  "guessBtnOk": "OK",
+  "guessErrorNoNumber": "Bitte eine Zahl eingeben!",
+  "guessFeedbackActual": "Tatsächliche carbs‑Menge: {actual} g",
+  "@guessFeedbackActual": {
+    "placeholders": {
+      "actual": {}
+    }
+  },
+  "guessFeedbackGuess": "Deine Schätzung: {guess} g",
+  "@guessFeedbackGuess": {
+    "placeholders": {
+      "guess": {}
+    }
+  },
+  "guessResultFail": "Das war schon schwierig, oder? Nächstes Mal wird''s besser!",
+  "guessResultGood": "Gut gemacht! Nur {diff} g daneben. (+2 Points)",
+  "@guessResultGood": {
+    "placeholders": {
+      "diff": {}
+    }
+  },
+  "guessResultGreat": "Sehr gut! Nur {diff} g daneben! (+5 Points)",
+  "@guessResultGreat": {
+    "placeholders": {
+      "diff": {}
+    }
+  },
+  "guessResultPerfect": "Wahnsinn! Du hast es super genau geschätzt! (+10 Points)",
+  "guessTitle": "Schätzspiel: Wie viele Kohlenhydrate (g) hat deine Meal?",
+  "guessInputLabel": "Deine Schätzung (g)",
+  "homeBtnHistory": "Verlauf",
+  "homeBtnMeal": "Meal",
+  "homeBtnSnack": "Snack",
+  "homeCob": "COB",
+  "homeIob": "IOB",
+  "homeLevel": "Level {level}",
+  "@homeLevel": {
+    "placeholders": {
+      "level": {}
+    }
+  },
+  "homeLoop": "Loop",
+  "homeMsgPointsAdded": "🎉 +{points} Points",
+  "@homeMsgPointsAdded": {
+    "placeholders": {
+      "points": {}
+    }
+  },
+  "homePoints": "{points} P",
+  "@homePoints": {
+    "placeholders": {
+      "points": {}
+    }
+  },
+  "khGameActual": "carbs‑Analyse",
+  "khGameAiGuess": "ChefBot‑Tipp",
+  "khGameClose": "Fast richtig geraten.",
+  "khGameMiss": "Leider daneben – versuch''s nochmal!",
+  "khGamePerfect": "Perfekt geschätzt!",
+  "khGameResultActual": "Tatsächliche carbs: {value} g",
+  "@khGameResultActual": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "khGameResultError": "Fehlerdifferenz: {value} g",
+  "@khGameResultError": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "khGameResultTitle": "Ergebnis",
+  "khGameResultUser": "Deine Schätzung: {value} g",
+  "@khGameResultUser": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "khGameResultXp": "XP erhalten: {value}",
+  "@khGameResultXp": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "khGameStreak": "Streak: {days} Tage",
+  "@khGameStreak": {
+    "placeholders": {
+      "days": {}
+    }
+  },
+  "khGameSubmit": "Bestätigen",
+  "khGameTitle": "carbs‑Schätz‑Duell",
+  "khGameWin": "🎉 Du hast ChefBot geschlagen!",
+  "limitsBzMax": "Maximaler BZ‑Wert",
+  "limitsBzMin": "Minimaler BZ‑Wert",
+  "limitsKhWarnLimit": "carbs‑Warnschwelle (g)",
+  "limitsTitle": "BZ‑ & carbs‑Thresholdn",
+  "mealRevDialogCarbs": "Kohlenhydrate",
+  "mealRevDialogConfirm": "Bolus übernehmen",
+  "mealRevDialogNone": "Keine weiteren Hinweise.",
+  "mealRevDialogTitle": "Bolus‑Empfehlung prüfen",
+  "mealRevRecommendation": "Bolus‑Empfehlung",
+  "mealRevRecommendedBy": "Empfohlen durch AAPS",
+  "mealRevSectionAdd": "Neuer Bestandteil",
+  "mealRevSectionFinalizeButton": "Abschließen",
+  "mealRevSectionFinalizeInfo": "Super gemacht! Die Daten werden nun saved and ggf. an Nightscout übertragen.",
+  "mealRevSectionGrams": "g",
+  "mealRevSectionLevel": "Level: {level}",
+  "@mealRevSectionLevel": {
+    "placeholders": {
+      "level": {}
+    }
+  },
+  "mealRevSectionPoints": "Deine Points: {points}",
+  "@mealRevSectionPoints": {
+    "placeholders": {
+      "points": {}
+    }
+  },
+  "mealRevSectionRecognized": "Erkannte Bestandteile:",
+  "mealRevSectionWarning": "Warningen",
+  "mealRevSnackbarSaved": "Meal saved!",
+  "mealRevTitleChild": "Meal überprüfen",
+  "mealRevTitleParent": "Meal ansehen",
+  "mealRevTotalLabel": "Gesamte carbs‑Menge",
+  "mealReviewTitle": "Mealen‑Review",
+  "notifApprovalReceived": "Du darfst jetzt Bolus abgeben.",
+  "notifKhReceivedSms": "carbs per SMS empfangen: {value} g",
+  "@notifKhReceivedSms": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "notifParentConfirmed": "Parents haben carbs‑Freigabe bestätigt.",
+  "notifPushSent": "Push gesendet: {type}",
+  "@notifPushSent": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "notifSettingChanged": "{key} = {value}",
+  "@notifSettingChanged": {
+    "placeholders": {
+      "key": {},
+      "value": {}
+    }
+  },
+  "notifSettingsUpdated": "Settings aktualisiert",
+  "notifSnackLimitChanged": "Snack‑Limit geändert: {limit}",
+  "@notifSnackLimitChanged": {
+    "placeholders": {
+      "limit": {}
+    }
+  },
+  "notifSyncReceived": "Settings übernommen!",
+  "notifAlarmHypoChild": "Dein Zucker ist niedrig ({value} mg/dl). Bitte sag einem Erwachsenen Bescheid!",
+  "@notifAlarmHypoChild": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "notifAlarmHypoParent": "Achtung: Blutzucker bei {value} mg/dl! Drop rate: -{delta}.",
+  "@notifAlarmHypoParent": {
+    "placeholders": {
+      "value": {},
+      "delta": {}
+    }
+  },
+  "notifAlarmHypoShort": "Niedriger BZ: {value} mg/dl",
+  "@notifAlarmHypoShort": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "notifAlarmHypoTitle": "ALARM! HYPO",
+  "notifAlarmNoDataText": "Seit über {minutes} Minuten keine Werte mehr empfangen.",
+  "@notifAlarmNoDataText": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "notifAlarmNoDataTitle": "Daten fehlen",
+  "notifAlarmPumpOfflineText": "Seit {minutes} Minuten keine Verbindung zur Pumpe.",
+  "@notifAlarmPumpOfflineText": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "notifAlarmPumpOfflineTitle": "Pumpe nicht erreichbar",
+  "nsApiKey": "API‑Schlüssel",
+  "nsTitle": "Nightscout",
+  "nsUrl": "Nightscout URL",
+  "parserErrorNotLoaded": "TextParser: YAML nicht geladen. Bitte zuerst 'loadUnitsFromYaml' aufrufen.",
+  "settingsAvatarLabelTheme": "Thema",
+  "settingsAvatarLabelUploadItem": "Avatar‑Item hochladen",
+  "settingsFieldBonusSnacks": "Snack‑Bonus‑Intervall",
+  "settingsFieldCarbWarn": "carbs‑Warnschwelle",
+  "settingsFieldChildThemeKey": "Avatar‑Thema",
+  "settingsFieldEnablePush": "Push aktiviert",
+  "settingsFieldEnableSms": "SMS‑Fallback",
+  "settingsFieldGptApiKey": "ChatGPT‑Schlüssel",
+  "settingsFieldImageMode": "Bildmodus",
+  "settingsFieldMuteAlarms": "Alarms stumm",
+  "settingsFieldNightscoutSecret": "API‑Secret",
+  "settingsFieldNightscoutUrl": "Nightscout URL",
+  "settingsFieldParentPhone": "Parents‑Telefon",
+  "settingsFieldPointsMeal": "Points pro Meal",
+  "settingsFieldPointsSnack": "Points pro Snack",
+  "settingsFieldSpeechMode": "Sprachmodus",
+  "settingsFieldVisionApiKey": "Vision‑Schlüssel",
+  "settingsMsgFileTooBig": "Datei zu groß",
+  "settingsMsgItemAdded": "Item hinzugefügt!",
+  "settingsNoTime": "Nicht gesetzt",
+  "settingsSaveButton": "Speichern",
+  "settingsSectionApiKeys": "API‑Schlüssel",
+  "settingsSectionAvatar": "Avatar",
+  "settingsSectionHealth": "Gesandheit",
+  "settingsSectionInfo": "Info",
+  "settingsSectionModes": "Betriebsmodi",
+  "settingsSectionNightscout": "Nightscout",
+  "settingsSectionNotifications": "Benachrichtigungen",
+  "settingsSectionPoints": "Points‑System",
+  "settingsTitle": "Settings",
+  "setupButtonContinue": "Weiter zur App",
+  "setupIntroAaps": "Nightscout‑Daten wurden aus AAPS übernommen.",
+  "setupIntroManual": "Bitte gib deine Nightscout‑Daten ein:",
+  "setupLabelSecret": "API‑Secret (SHA1)",
+  "setupLabelUrl": "Nightscout‑URL",
+  "setupTitle": "Ersteinrichtung",
+  "setupValidateRequired": "Pflichtfeld",
+  "startChild": "Ich bin das Kind",
+  "startParent": "Ich bin ein Parentsteil",
+  "startProfile": "Profil wechseln / einrichten",
+  "startSettings": "Settings",
+  "startTitle": "Willkommen!\nWer bist du?",
+  "speechBtnCancel": "Abbrechen",
+  "speechBtnStart": "Aufnahme",
+  "speechBtnStop": "Fertig",
+  "speechDialogRecord": "Sprich bitte deutlich in dein Gerät.",
+  "speechDialogTitleReady": "Bereit für Aufnahme?",
+  "speechDialogTitleRecording": "Sprich jetzt!",
+  "speechDialogInstruction": "Drücke Aufnahme and sprich dann ins Mikrofon.",
+  "speechErrorApi": "Fehler bei der Sprachverarbeitung:",
+  "speechErrorEmpty": "Keine Sprache erkannt.",
+  "speechErrorFileMissing": "Keine Audiodatei gefanden.",
+  "speechErrorInvalidResponse": "Unerwartete Antwort von Whisper.",
+  "speechErrorNetwork": "Keine Netzwerkverbindung.",
+  "speechErrorNoApiKey": "OpenAI API key fehlt.",
+  "speechErrorNoFile": "Es wurde keine Aufnahme erkannt.",
+  "speechErrorOfflineEngine": "Offline‑Spracherkennung nicht verfügbar.",
+  "speechErrorPermission": "Mikrofonberechtigung erforderlich.",
+  "speechPluginError": "Fehler bei Aufnahme über Plugin.",
+  "syncError": "Netzwerkfehler bei Sync: {error}",
+  "@syncError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "syncFailure": "Synchronisierung fehlgeschlagen: {type}",
+  "@syncFailure": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "syncSuccess": "Synchronisierung erfolgreich: {type}",
+  "@syncSuccess": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "syncUnknownEvent": "Unbekannter Event vom Server: {type}",
+  "@syncUnknownEvent": {
+    "placeholders": {
+      "type": {}
+    }
+  }
+}
