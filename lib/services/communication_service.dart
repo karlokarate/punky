@@ -1,5 +1,5 @@
 /*
- *  communication_service.dart   (v3.4 – corrected)
+ *  communication_service.dart   (v3.4 – vollständig korrigiert)
  *  --------------------------------------------------------------
  *  Vereinheitlichte Messaging-Ebene (Push + SMS + Offline-Queue)
  *
@@ -55,10 +55,10 @@ class CommunicationService {
       await _initPush();
     }
 
-    if ((SettingsService.I.enableSms ?? false) && flavor != AppFlavor.plugin) {
+    if (SettingsService.I.enableSms && flavor != AppFlavor.plugin) {
       final telephony = Telephony.instance;
-      final granted = await telephony.requestSmsPermissions;
-      if (granted) {
+      final bool? granted = await telephony.requestSmsPermissions;
+      if (granted == true) {
         telephony.listenIncomingSms(
           onNewMessage: _handleIncomingSms,
           onBackgroundMessage: _smsBgHandler,
@@ -146,7 +146,6 @@ class CommunicationService {
   Future<void> flushQueue() async {
     if (_queue.isEmpty) return;
     for (int i = 0; i < _queue.length; i++) {
-      final e = Map<String, dynamic>.from(_queue.getAt(i));
       try {
         await Future.delayed(Duration(milliseconds: 300 + _random.nextInt(500)));
         await _queue.deleteAt(i);

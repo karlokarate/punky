@@ -1,22 +1,23 @@
 /*
- *  avatar_screen.dart  (v2 – i18n)
+ *  avatar_screen.dart  (v2 – i18n)
  *  --------------------------------------------------------------
  *  Vollbild‑Editor:
- *    – Zeigt aktuellen Avatar (zusammengesetzte PNG‑Layer)
- *    – Listen‑Tabs je Layer (Body, Head, Accessory, Weapon, Wing)
- *    – Lock‑Icon für Items, die noch nicht freigeschaltet sind
- *    – Eltern können im Eltern‑Profil neue PNGs hochladen
+ *    – Zeigt aktuellen Avatar (zusammengesetzte PNG‑Layer)
+ *    – Listen‑Tabs je Layer (Body, Head, Accessory, Weapon, Wing)
+ *    – Lock‑Icon für Items, die noch nicht freigeschaltet sind
+ *    – Eltern können im Eltern‑Profil neue PNGs hochladen
  *
  *  Projektpfad: lib/ui/avatar_screen.dart
  */
 
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../services/avatar_service.dart';
 import '../services/settings_service.dart';
-import '../services/localization_helper.dart';
 
 class AvatarScreen extends StatelessWidget {
   const AvatarScreen({super.key});
@@ -38,16 +39,18 @@ class _AvatarBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final a = Provider.of<_AvatarAdapter>(context);
+    final l = AppLocalizations.of(context)!;
     final layers = ['background', 'wing', 'body', 'head', 'accessory', 'weapon'];
 
     return DefaultTabController(
       length: layers.length,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(LocalizationHelper.get('avatar.title')),
+          title: Text(l.avatarTitle),
           bottom: TabBar(
             isScrollable: true,
-            tabs: layers.map((l) => Tab(text: LocalizationHelper.get('avatar.layers.$l'))).toList(),
+            tabs:
+            layers.map((layer) => Tab(text: _layerLabel(l, layer))).toList(),
           ),
         ),
         body: TabBarView(
@@ -71,9 +74,7 @@ class _AvatarBody extends StatelessWidget {
               final unlocked = a.unlocked(it.key);
               final selected = a.isSelected(layer, it.key);
               return GestureDetector(
-                onTap: unlocked
-                    ? () => a.equip(layer, it.key)
-                    : () {},
+                onTap: unlocked ? () => a.equip(layer, it.key) : () {},
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -102,6 +103,25 @@ class _AvatarBody extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _layerLabel(AppLocalizations l, String layer) {
+    switch (layer) {
+      case 'background':
+        return l.avatarBackground;
+      case 'wing':
+        return 'Wing';
+      case 'body':
+        return l.avatarBody;
+      case 'head':
+        return l.avatarHead;
+      case 'accessory':
+        return l.avatarAccessory;
+      case 'weapon':
+        return l.avatarWeapon;
+      default:
+        return layer;
+    }
   }
 }
 
@@ -141,8 +161,7 @@ class _AvatarAdapter extends ChangeNotifier {
 
   bool unlocked(String key) => _a.itemUnlocked(key);
 
-  bool isSelected(String layer, String key) =>
-      _a.state.equipped[layer] == key;
+  bool isSelected(String layer, String key) => _a.state.equipped[layer] == key;
 
   String? selectedItem(String layer) => _a.state.equipped[layer];
 

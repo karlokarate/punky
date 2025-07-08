@@ -1,20 +1,7 @@
 /*
- *  kh_guessing_page.dart  (v2 – i18n)
+ *  kh_guessing_page.dart  (v2 – i18n)
  *  --------------------------------------------------------------
  *  Großflächige, kindgerechte UI für das KH‑Guessing‑Game.
- *
- *  Highlights
- *    • Punky‑Pankreas‑Avatar (Lottie)
- *    • AI‑Chip mit ChefBot‑Schätzung
- *    • Streak‑Banner
- *    • Riesen‑Number‑Pad mit Quick‑±5‑Buttons
- *    • Reaktives XP‑Overlay bei Erfolg
- *
- *  Abhängigkeiten
- *    • provider
- *    • lottie
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
 import 'package:flutter/material.dart';
@@ -24,7 +11,8 @@ import 'package:intl/intl.dart';
 
 import '../controllers/kh_guessing_controller.dart';
 import '../event_bus.dart';
-import '../services/localization_helper.dart';
+import '../services/gamification_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class KhGuessingPage extends StatelessWidget {
   const KhGuessingPage({super.key});
@@ -47,11 +35,12 @@ class _GuessScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = context.watch<KhGuessingController>();
     final nf = NumberFormat.compact(locale: 'de_DE');
+    final l = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        title: Text(LocalizationHelper.get('kh_game.title')),
+        title: Text(l.khGameTitle),
         leading: BackButton(
           onPressed: () {
             Navigator.pop(context);
@@ -72,7 +61,7 @@ class _GuessScaffold extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 90, 16, 16),
             child: Column(
               children: [
-                /* Actual + AI Guess (nur Info) */
+                /* Actual + AI Guess (nur Info) */
                 _InfoRow(
                   actual: ctrl.actualCarbs ?? 0,
                   ai: ctrl.aiGuess ?? 0,
@@ -94,7 +83,7 @@ class _GuessScaffold extends StatelessWidget {
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.rocket_launch),
                     label: Text(
-                      LocalizationHelper.get('kh_game.submit'),
+                      l.khGameSubmit,
                       style: const TextStyle(fontSize: 20),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -119,28 +108,24 @@ class _GuessScaffold extends StatelessWidget {
   void _showResultDialog(BuildContext ctx) {
     final c = KhGuessingController.I;
     final nf = NumberFormat.decimalPattern('de_DE');
+    final l = AppLocalizations.of(ctx)!;
     showDialog(
       context: ctx,
       builder: (_) => AlertDialog(
-        title: Text(LocalizationHelper.get('kh_game.result.title')),
+        title: Text(l.khGameResultTitle),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(LocalizationHelper.get('kh_game.result.user',
-              placeholders: {'value': nf.format(c.userGuess)})),
-          Text(LocalizationHelper.get('kh_game.result.actual',
-              placeholders: {'value': nf.format(c.actualCarbs)})),
+          Text(l.khGameResultUser(nf.format(c.userGuess))),
+          Text(l.khGameResultActual(nf.format(c.actualCarbs))),
           const SizedBox(height: 8),
-          Text(LocalizationHelper.get('kh_game.result.error',
-              placeholders: {'value': nf.format(c.error)})),
+          Text(l.khGameResultError(nf.format(c.error))),
           const SizedBox(height: 8),
-          Text(LocalizationHelper.get('kh_game.result.xp',
-              placeholders: {'value': c.xp.toString()})),
-          if (c.duelResult == DuelResult.win)
-            Text(LocalizationHelper.get('kh_game.result.win')),
+          Text(l.khGameResultXp(c.xp.toString())),
+          if (c.duelResult == DuelResult.win) Text(l.khGameWin),
         ]),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(LocalizationHelper.get('common.ok')),
+            child: Text(l.commonOk),
           )
         ],
       ),
@@ -157,15 +142,12 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nf = NumberFormat.decimalPattern('de_DE');
+    final l = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _Chip(
-            label: LocalizationHelper.get('kh_game.actual'),
-            value: '${nf.format(actual)} g'),
-        _Chip(
-            label: LocalizationHelper.get('kh_game.ai_guess'),
-            value: '${nf.format(ai)} g'),
+        _Chip(label: l.khGameActual, value: '${nf.format(actual)} g'),
+        _Chip(label: l.khGameAiGuess, value: '${nf.format(ai)} g'),
       ],
     );
   }
@@ -177,16 +159,15 @@ class _Chip extends StatelessWidget {
   const _Chip({required this.label, required this.value});
   @override
   Widget build(BuildContext context) => Chip(
-    labelPadding:
-    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    labelPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     avatar: const Icon(Icons.info, size: 18),
     label: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 11)),
         Text(value,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 14)),
+            style:
+            const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
       ],
     ),
   );
@@ -211,6 +192,7 @@ class _PunkyAvatar extends StatelessWidget {
 class _StreakBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return FutureBuilder<int>(
       future: GamificationService.instance.currentStreak,
       builder: (_, snap) {
@@ -224,9 +206,10 @@ class _StreakBanner extends StatelessWidget {
               children: [
                 const Icon(Icons.local_fire_department, color: Colors.red),
                 const SizedBox(width: 6),
-                Text(LocalizationHelper.get('kh_game.streak',
-                    placeholders: {'days': streak.toString()}),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  l.khGameStreak(streak.toString()),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),

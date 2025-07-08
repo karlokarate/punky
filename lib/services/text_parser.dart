@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:ui';
+
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
-import 'package:diabetes_kids_app/utils/localization_helper.dart';
+
+import '../l10n/app_localizations.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
+import 'dart:ui'
 
 class ParsedItem {
   final double amount;
@@ -45,8 +49,9 @@ class TextParser {
   }
 
   static List<ParsedItem> parse(String input) {
+    final loc = lookupAppLocalizations(const Locale('en'));
     if (!_loaded) {
-      throw Exception(LocalizationHelper.get('text_parser.error.not_loaded'));
+      throw Exception(loc.parserErrorNotLoaded);
     }
 
     final List<ParsedItem> result = [];
@@ -95,11 +100,39 @@ class TextParser {
     input = input.replaceAll(',', '.');
     final lower = input.toLowerCase();
 
-    if (RegExp(r'^\d+(\.\d+)?\$').hasMatch(lower)) {
+    if (RegExp(r'^\d+(\.\d+)?$').hasMatch(lower)) {
       return double.tryParse(lower);
     }
 
-    final numbers = Map<String, double>.from(LocalizationHelper.getMap('text_parser.numbers'));
+    const numbers = {
+      'null': 0,
+      'eins': 1,
+      'ein': 1,
+      'eine': 1,
+      'zwei': 2,
+      'drei': 3,
+      'vier': 4,
+      'fünf': 5,
+      'sechs': 6,
+      'sieben': 7,
+      'acht': 8,
+      'neun': 9,
+      'zehn': 10,
+      'elf': 11,
+      'zwölf': 12,
+      'one': 1,
+      'two': 2,
+      'three': 3,
+      'four': 4,
+      'five': 5,
+      'six': 6,
+      'seven': 7,
+      'eight': 8,
+      'nine': 9,
+      'ten': 10,
+      'eleven': 11,
+      'twelve': 12,
+    };
 
     return numbers[lower];
   }

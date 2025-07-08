@@ -1,25 +1,10 @@
 /*
- *  speech_service.dart  (v1 – FINAL)
+ *  speech_service.dart  (v4 – FIXED VOSK API USAGE)
  *  --------------------------------------------------------------
- *  Aufgabe
- *    • Sprache → Text → ParsedFood oder Freitext‑Command
- *    • Drei Modi (Settings → speechMode):
- *        offline  : Vosk  (on‑device)
- *        hybrid   : Whisper bevorzugt, Vosk Fallback
- *        online   : Whisper (OpenAI)
- *    • Event‑Workflow
- *        SpeechInputStartedEvent
- *        SpeechInputFinishedEvent (transcript)
- *        SpeechInputFailedEvent   (reason)
- *    • Avatar‑Reaktionen
- *    • AAPS‑Plugin‑Bridge („kidsapp/speech_bridge“)
- *
- *  Benötigte Pakete
- *    • vosk_dart
- *    • speech_to_text          (Fallback für iOS)
- *    • http                    (Whisper)
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
+ *  Whisper: Online mit Sprache "de"
+ *  Vosk: Offline mit Modell im Asset-Verzeichnis
+ *  iOS: Fallback mit speech_to_text
+ *  Ergebnis geht direkt an TextParser
  */
 
 import 'dart:async';
@@ -30,10 +15,11 @@ import 'package:event_bus/event_bus.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:vosk_dart/vosk_dart.dart' as vosk;
+import 'package:vosk_flutter/vosk_flutter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../events/app_events.dart';
+import '../services/text_parser.dart';
 import 'settings_service.dart';
 
 class SpeechInputStartedEvent {}
@@ -50,19 +36,15 @@ class SpeechService {
   SpeechService._();
   static final SpeechService instance = SpeechService._();
 
-  static const MethodChannel _speechBridge =
-  MethodChannel('kidsapp/speech_bridge'); // AAPS‑Plugin
+  static const MethodChannel _speechBridge = MethodChannel('kidsapp/speech_bridge');
 
   late SettingsService _settings;
   late EventBus _bus;
 
-  /* Offline */
-  vosk.SpeechService? _vosk;
+  VoskModel? _voskModel;
+  VoskRecognizer? _voskRecognizer;
   stt.SpeechToText? _iosFallback;
 
-  /* ───────────────────────────────────────────────────────────────
-   * Init – AppInitializer ruft auf
-   * ──────────────────────────────────────────────────────────── */
   Future<void> init(EventBus bus) async {
     _bus = bus;
     _settings = SettingsService.I;
@@ -71,32 +53,29 @@ class SpeechService {
       await _initOfflineEngine();
     }
 
-    // Plugin‑Callback
     _speechBridge.setMethodCallHandler(_onPluginCall);
   }
 
   Future<void> _initOfflineEngine() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final modelPath = '${dir.path}/vosk/model-small-de';
+      const modelAsset = 'assets/models/vosk-model-small-de-0.15';
+      final appDir = await getApplicationDocumentsDirectory();
+      final modelPath = '${appDir.path}/vosk_model';
+
       if (!await Directory(modelPath).exists()) {
-        // Modell aus Assets kopieren (einmalig)
-        final data = await rootBundle.load('assets/ml/vosk/model-small-de.zip');
-        final file = File('${dir.path}/model.zip');
-        await file.writeAsBytes(data.buffer.asUint8List());
-        // TODO: unzip
+        await Directory(modelPath).create(recursive: true);
+        // TODO: Alle Modelldateien extrahieren
+        final config = await rootBundle.load('$modelAsset/model.conf');
+        final file = File('$modelPath/model.conf');
+        await file.writeAsBytes(config.buffer.asUint8List());
       }
-      _vosk = vosk.SpeechService(modelPath: modelPath);
-      await _vosk!.init();
+
+      _voskModel = VoskModel(modelPath);
     } catch (_) {
-      // Android‑/Linux‑Fallback fehlgeschlagen → iOS‐speech_to_text nutzen
       _iosFallback = stt.SpeechToText();
     }
   }
 
-  /* ───────────────────────────────────────────────────────────────
-   * Öffentliche API
-   * ──────────────────────────────────────────────────────────── */
   Future<void> startListening() async {
     _bus.fire(SpeechInputStartedEvent());
 
@@ -114,58 +93,63 @@ class SpeechService {
     }
   }
 
-  /* ───────────────────────────────────────────────────────────────
-   * Whisper (OpenAI) – Online
-   * ──────────────────────────────────────────────────────────── */
   Future<bool> _listenWhisper() async {
     final key = _settings.whisperApiKey;
     if (key.isEmpty) return false;
 
     try {
       final tempPath = '${(await getTemporaryDirectory()).path}/rec.wav';
+      if (!await _recordNative(tempPath)) return false;
 
-      // Plugin‑/System‑Recording (AAPS Bridge), sonst native
-      if (!(await _recordViaPlugin(tempPath))) {
-        if (!await _recordNative(tempPath)) return false;
-      }
-
-      // Whisper‑Upload
       final uri = Uri.parse('https://api.openai.com/v1/audio/transcriptions');
       final req = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $key'
         ..fields['model'] = 'whisper-1'
+        ..fields['language'] = 'de'
         ..files.add(await http.MultipartFile.fromPath('file', tempPath));
 
       final rsp = await http.Response.fromStream(await req.send());
       if (rsp.statusCode != 200) return false;
 
       final txt = jsonDecode(rsp.body)['text'] as String;
-      _bus..fire(SpeechInputFinishedEvent(txt))
-        ..fire(AvatarCelebrateEvent());
+      _handleTranscript(txt);
       return true;
     } catch (_) {
       return false;
     }
   }
 
-  /* ───────────────────────────────────────────────────────────────
-   * Offline (Vosk / speech_to_text)
-   * ──────────────────────────────────────────────────────────── */
   Future<void> _listenOffline() async {
     try {
-      if (_vosk != null) {
-        final txt = await _vosk!.listenOnce();
-        if (txt.isEmpty) {
+      if (_voskModel != null) {
+        _voskRecognizer = VoskRecognizer(_voskModel!, 16000);
+        final audioPath = '${(await getTemporaryDirectory()).path}/vosk.wav';
+
+        // Aufnahme vorausgesetzt vorhanden
+        if (!await _recordNative(audioPath)) {
+          _fail('no_audio');
+          return;
+        }
+
+        final file = File(audioPath);
+        final bytes = await file.readAsBytes();
+        _voskRecognizer!.acceptWaveForm(bytes);
+        final result = jsonDecode(_voskRecognizer!.finalResult())['text'];
+
+        if ((result as String).isEmpty) {
           _fail('empty');
         } else {
-          _bus..fire(SpeechInputFinishedEvent(txt))
-            ..fire(AvatarCelebrateEvent());
+          _handleTranscript(result);
         }
       } else if (_iosFallback != null) {
         await _iosFallback!.initialize();
-        final txt = await _iosFallback!.listen(onResult: (_) {}).first;
-        _bus..fire(SpeechInputFinishedEvent(txt.recognizedWords))
-          ..fire(AvatarCelebrateEvent());
+        String text = '';
+        await _iosFallback!.listen(
+          onResult: (res) => text = res.recognizedWords,
+          listenFor: const Duration(seconds: 5),
+        );
+        await Future.delayed(const Duration(seconds: 6));
+        _handleTranscript(text);
       } else {
         _fail('offline_engine_missing');
       }
@@ -174,38 +158,36 @@ class SpeechService {
     }
   }
 
-  /* ───────────────────────────────────────────────────────────────
-   * Aufnahme via Plugin‑Bridge (AAPS) – für Whisper
-   * ──────────────────────────────────────────────────────────── */
-  Future<bool> _recordViaPlugin(String outPath) async {
+  Future<bool> _recordNative(String outPath) async {
     try {
-      final res =
-      await _speechBridge.invokeMethod<String>('recordOnce', {'path': outPath});
+      const channel = MethodChannel('kidsapp/mic');
+      final res = await channel.invokeMethod<String>('recordOnce', {'path': outPath});
       return res == 'ok' && File(outPath).existsSync();
     } catch (_) {
       return false;
     }
   }
 
-  /* Native Aufnahme (Flutter plugins) – Fallback */
-  Future<bool> _recordNative(String outPath) async {
-    // TODO: mic_stream / flutter_sound Integration
-    return false;
+  void _handleTranscript(String txt) {
+    _bus
+      ..fire(SpeechInputFinishedEvent(txt))
+      ..fire(AvatarCelebrateEvent());
+
+    final parsed = TextParser.parse(txt);
+    if (parsed.isEmpty) {
+      _fail('no_keywords_detected');
+    }
   }
 
-  /* ───────────────────────────────────────────────────────────────
-   * Plugin‑Callbacks
-   * ──────────────────────────────────────────────────────────── */
   Future<void> _onPluginCall(MethodCall call) async {
     if (call.method == 'onSpeechError') {
       _fail(call.arguments ?? 'plugin_error');
     }
   }
 
-  /* ───────────────────────────────────────────────────────────────
-   * Fehler
-   * ──────────────────────────────────────────────────────────── */
   void _fail(String r) {
-    _bus..fire(SpeechInputFailedEvent(r))..fire(AvatarSadEvent());
+    _bus
+      ..fire(SpeechInputFailedEvent(r))
+      ..fire(AvatarSadEvent());
   }
 }

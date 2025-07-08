@@ -104,21 +104,24 @@ class LevelUpEvent extends AppEvent {
 /* ---------- Bolus ---------- */
 
 class BolusCalculatedEvent extends AppEvent {
-  final String source;
-  final double insulin;
-  final double ratio;
+  final double carbs;
+  final double units;
+  final String reason;
+  final bool isSafe;
 
   BolusCalculatedEvent({
-    required this.source,
-    required this.insulin,
-    required this.ratio,
+    required this.carbs,
+    required this.units,
+    required this.reason,
+    required this.isSafe,
   });
 
   @override
   Map<String, dynamic> toJson() => {
-    'source': source,
-    'insulin': insulin,
-    'ratio': ratio,
+    'carbs': carbs,
+    'units': units,
+    'reason': reason,
+    'isSafe': isSafe,
   };
 }
 
@@ -165,9 +168,10 @@ class AppEventFactory {
             (p['components'] as List).cast<Map<String, dynamic>>());
       case 'BolusCalculatedEvent':
         return BolusCalculatedEvent(
-          source: p['source'],
-          insulin: (p['insulin'] as num).toDouble(),
-          ratio: (p['ratio'] as num).toDouble(),
+          carbs: (p['carbs'] as num).toDouble(),
+          units: (p['units'] as num).toDouble(),
+          reason: p['reason'] ?? '',
+          isSafe: p['isSafe'] == true,
         );
       default:
         return GenericAapsEvent(type, p);

@@ -8,13 +8,16 @@ environment:
   flutter: ">=3.0.0"
 
 dependencies:
+  # Stringvergleich
+  dart_levenshtein: ^1.0.1
+
   flutter:
     sdk: flutter
 
   # Lokalisierung
   flutter_localizations:
     sdk: flutter
-  intl: 0.20.2
+  intl: ^0.20.2
 
   # Netzwerk
   http: ^1.4.0
@@ -32,8 +35,8 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   sqflite: ^2.4.2
 
-  # Berechtigungen & Medien
-  permission_handler: ^11.3.1
+  # Medien & Berechtigungen
+  permission_handler: ^12.0.0
   record: ^6.0.0
   image_picker: ^1.0.7
 
@@ -41,15 +44,13 @@ dependencies:
   firebase_core: ^2.30.0
   firebase_messaging: ^14.7.16
 
-  # Event- und Datenfluss
+  # Event-Fluss & Animation
   rxdart: ^0.27.7
   event_bus: ^2.0.1
   yaml: ^3.1.2
-
-  # Animation
   lottie: ^3.3.1
 
-  # Verschiedenes (explizite Versionsbindung empfohlen)
+  # Basics
   path: any
   flutter_local_notifications: any
   vibration: any
@@ -61,14 +62,8 @@ dependencies:
   provider: any
   url_launcher: any
 
-  # Stringvergleich (statt levenshtein)
-  string_similarity: ^2.0.0
-
-  # Offline-Spracherkennung mit Vosk
-  vosk_flutter:
-    git:
-      url: https://github.com/alphacep/vosk-flutter.git
-      tag: 0.3.48
+  # Offline-Spracherkennung
+  vosk_flutter: ^0.3.48  # bleibt, aber wir verwenden downgrades unten
 
 dev_dependencies:
   flutter_test:
@@ -83,9 +78,10 @@ flutter:
     - lib/assets/config/settings_schema.yaml
     - lib/assets/config/portion_units_de.yaml
     - lib/assets/db/products.sqlite
-    - assets/i18n/
+    - lib/assets/l10n/
     - assets/models/vosk-model-small-de-0.15/
 
 dependency_overrides:
-  # Erzwingt Kompatibilität zwischen vosk_flutter (archive ^3.x) und lottie (archive ^4.x)
   archive: ^4.0.0
+  permission_handler: ^12.0.0
+  http: ^0.13.5       # Downgrade, damit zu vosk_flutter passt

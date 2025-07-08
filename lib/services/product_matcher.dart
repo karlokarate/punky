@@ -1,31 +1,31 @@
 /*
- *  product_matcher.dart  (v1 – FINAL)
+ *  product_matcher.dart   (v1.3 – FINAL)
  *  --------------------------------------------------------------
- *  Leistungsfähiger Matcher für Lebensmittel → Open‑Food‑Facts‑DB
+ *  Leistungsfähiger Matcher für Lebensmittel → Open​-Food​-Facts​-DB
  *
  *  • API
  *      ProductMatcher(db).findMatches(FoodItem) → MatchResult
  *  • Features
- *      – Fuzzy‑Suche (Levenshtein & LIKE)
- *      – Portion‑Einheiten aus units.yaml
+ *      – Fuzzy​-Suche (Levenshtein & LIKE)
+ *      – Portion​-Einheiten aus units.yaml
  *      – Carbs / 100 g + pro Portion
  *      – Cache (LRU, 256 Einträge)
- *      – EventBus‑Hook → ProductLookupFailedEvent
+ *      – EventBus​-Hook → ProductLookupFailedEvent
  *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
+ *  © 2025 Kids Diabetes Companion – GPL​-3.0​-or​later
  */
 
 import 'dart:collection';
 import 'package:event_bus/event_bus.dart';
-import 'package:levenshtein/levenshtein.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:string_similarity/string_similarity.dart';
 
-import '../event_bus.dart';
+import '../core/event_bus.dart';
 import '../events/app_events.dart';
 
 class FoodItem {
-  final String rawName; // vom Parser
-  final double amount;  // g / ml / Stück (bereits normalisiert)
+  final String rawName;
+  final double amount;
   const FoodItem({required this.rawName, required this.amount});
 }
 
@@ -72,22 +72,16 @@ class ProductMatcher {
 
   final Database _db;
   late final EventBus _bus;
-
-  // LRU‑Cache (256 Einträge)
   final _cache = <String, _CacheEntry>{};
-
-  /* --------------------------------------------------------- */
 
   Future<MatchResult> findMatches(FoodItem item) async {
     final key = '${item.rawName.toLowerCase()}-${item.amount.floor()}';
     if (_cache.containsKey(key)) {
-      // Move to front
       final entry = _cache.remove(key)!;
       _cache[key] = entry;
       return entry.value;
     }
 
-    // 1 | exakte LIKE‑Suche
     final rows = await _db.rawQuery(
       'SELECT _id, product_name, carbohydrates_100g, serving_quantity, carbohydrates_serving '
           'FROM products '
@@ -99,14 +93,14 @@ class ProductMatcher {
     var matches = _toMatches(rows);
     var fuzzy = false;
 
-    // 2 | Fuzzy‑Ergänzung falls leer
     if (matches.isEmpty) {
       final rows2 = await _db.rawQuery(
-          'SELECT _id, product_name, carbohydrates_100g, serving_quantity, carbohydrates_serving '
-              'FROM products '
-              'WHERE carbohydrates_100g IS NOT NULL '
-              'LIMIT 5000'); // grobe Vorauswahl
-      final best = _bestLevenshtein(item.rawName, rows2);
+        'SELECT _id, product_name, carbohydrates_100g, serving_quantity, carbohydrates_serving '
+            'FROM products '
+            'WHERE carbohydrates_100g IS NOT NULL '
+            'LIMIT 5000',
+      );
+      final best = _bestSimilarity(item.rawName, rows2);
       if (best != null) {
         matches = [best];
         fuzzy = true;
@@ -120,10 +114,6 @@ class ProductMatcher {
     return res;
   }
 
-  /* --------------------------------------------------------- */
-  /*  Helpers                                                  */
-  /* --------------------------------------------------------- */
-
   List<ProductMatch> _toMatches(List<Map<String, Object?>> rows) => rows.map((r) {
     double? carbsServing;
     if (r['carbohydrates_serving'] != null) {
@@ -133,24 +123,23 @@ class ProductMatcher {
       id: r['_id'].toString(),
       name: (r['product_name'] as String?)?.trim() ?? 'Unbenannt',
       carbsPer100g: (r['carbohydrates_100g'] as num?)?.toDouble() ?? 0.0,
-      servingQuantity:
-      (r['serving_quantity'] as num?)?.toDouble(), // könnte null sein
+      servingQuantity: (r['serving_quantity'] as num?)?.toDouble(),
       carbsPerServing: carbsServing,
     );
   }).toList();
 
-  ProductMatch? _bestLevenshtein(String term, List<Map<String, Object?>> rows) {
-    int bestScore = 999;
+  ProductMatch? _bestSimilarity(String term, List<Map<String, Object?>> rows) {
+    double bestScore = 0.0;
     Map<String, Object?>? bestRow;
     for (final r in rows) {
       final name = r['product_name'] as String? ?? '';
-      final score = levenshtein(term.toLowerCase(), name.toLowerCase());
-      if (score < bestScore) {
+      final score = name.similarityTo(term);
+      if (score > bestScore) {
         bestScore = score;
         bestRow = r;
       }
     }
-    if (bestScore < 5 && bestRow != null) {
+    if (bestScore >= 0.5 && bestRow != null) {
       return _toMatches([bestRow]).first;
     }
     return null;

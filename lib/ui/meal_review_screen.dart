@@ -3,19 +3,42 @@
  *  --------------------------------------------------------------
  *  Bewertungs-Screen nach Analyse: KH-Komponenten, Bolus-Empfehlung,
  *  Interaktion mit AAPS (manuell bestätigt), visuell optimiert.
- *
- *  Projektpfad: lib/ui/meal_review_screen.dart
  */
 
 import 'dart:async';
+
+import 'package:event_bus/event_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:event_bus/event_bus.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../services/meal_analyzer.dart'
     show MealReviewComponent, BolusCalculatedEvent;
 import '../events/app_events.dart';
-import '../services/localization_helper.dart';
+
+class MealReviewComponent {
+  final String name;
+  final double grams;
+  final double carbsPer100g;
+  final double carbsTotal;
+  final bool isNewlyAdded;
+
+  const MealReviewComponent({
+    required this.name,
+    required this.grams,
+    required this.carbsPer100g,
+    required this.carbsTotal,
+    this.isNewlyAdded = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'grams': grams,
+    'carbsPer100g': carbsPer100g,
+    'carbsTotal': carbsTotal,
+    'isNewlyAdded': isNewlyAdded,
+  };
+}
 
 class MealReviewScreen extends StatefulWidget {
   final EventBus eventBus;
@@ -37,13 +60,12 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
   void initState() {
     super.initState();
 
-    _subAnalysis =
-        widget.eventBus.on<MealAnalyzedEvent>().listen((e) {
-          setState(() {
-            _components = e.components;
-            _totalCarbs = e.totalCarbs;
-          });
-        });
+    _subAnalysis = widget.eventBus.on<MealAnalyzedEvent>().listen((e) {
+      setState(() {
+        _components = e.components;
+        _totalCarbs = e.totalCarbs;
+      });
+    });
 
     _subBolus = widget.eventBus.on<BolusCalculatedEvent>().listen((e) {
       setState(() => _bolusRec = e);
@@ -61,10 +83,11 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final nf = NumberFormat.decimalPattern();
+    final l = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(LocalizationHelper.get('meal_review.title')),
+        title: Text(l.mealReviewTitle),
       ),
       body: Column(
         children: [
@@ -73,7 +96,7 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(LocalizationHelper.get('meal_review.total_label'),
+                Text(l.mealRevTotalLabel,
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
                 LinearProgressIndicator(
@@ -81,7 +104,7 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
                   minHeight: 8,
                 ),
                 const SizedBox(height: 8),
-                Text('${nf.format(_totalCarbs)} g ${LocalizationHelper.get('meal_review.carbs')}',
+                Text('${nf.format(_totalCarbs)} g ${l.mealRevSectionGrams}',
                     style: Theme.of(context).textTheme.headlineSmall),
               ],
             ),
@@ -93,7 +116,8 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
               itemBuilder: (context, i) {
                 final c = _components[i];
                 return Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
                   child: ListTile(
                     leading: Icon(
@@ -102,7 +126,7 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
                     ),
                     title: Text(c.name),
                     subtitle: Text(
-                        '${nf.format(c.grams)} g  •  ${nf.format(c.carbsTotal)} g ${LocalizationHelper.get('meal_review.carbs')}'),
+                        '${nf.format(c.grams)} g  •  ${nf.format(c.carbsTotal)} g ${l.mealRevSectionGrams}'),
                   ),
                 );
               },
@@ -115,23 +139,22 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
   }
 
   Widget _buildBolusBanner(BolusCalculatedEvent e, BuildContext ctx) {
+    final l = AppLocalizations.of(ctx)!;
     return Material(
       color: e.isSafe ? Colors.teal : Colors.red.shade700,
       child: ListTile(
         leading: const Icon(Icons.medical_services, color: Colors.white),
         title: Text(
-          '${LocalizationHelper.get('meal_review.recommendation')}: ${e.units.toStringAsFixed(1)} IE',
+          '${l.mealRevRecommendation}: ${e.units.toStringAsFixed(1)} IE',
           style: const TextStyle(color: Colors.white),
         ),
         subtitle: Text(
-          e.reason.isEmpty
-              ? LocalizationHelper.get('meal_review.recommended_by')
-              : e.reason,
+          e.reason.isEmpty ? l.mealRevRecommendedBy : e.reason,
           style: const TextStyle(color: Colors.white70),
         ),
         trailing: TextButton(
           onPressed: () => _showBolusDialog(e),
-          child: Text(LocalizationHelper.get('common.details'),
+          child: Text(l.commonDetails,
               style: const TextStyle(color: Colors.white)),
         ),
       ),
@@ -139,22 +162,21 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
   }
 
   Future<void> _showBolusDialog(BolusCalculatedEvent e) async {
+    final l = AppLocalizations.of(context)!;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(LocalizationHelper.get('meal_review.dialog.title')),
+        title: Text(l.mealRevDialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${LocalizationHelper.get('meal_review.dialog.carbs')}: ${e.carbs.toStringAsFixed(1)} g'),
+            Text('${l.mealRevDialogCarbs}: ${e.carbs.toStringAsFixed(1)} g'),
             const SizedBox(height: 4),
-            Text('${LocalizationHelper.get('meal_review.dialog.units')}: ${e.units.toStringAsFixed(1)} IE'),
+            Text('IE: ${e.units.toStringAsFixed(1)}'),
             const SizedBox(height: 4),
             Text(
-              e.reason.isEmpty
-                  ? LocalizationHelper.get('meal_review.dialog.none')
-                  : e.reason,
+              e.reason.isEmpty ? l.mealRevDialogNone : e.reason,
               style: TextStyle(
                 color: e.isSafe ? Colors.green : Colors.red,
               ),
@@ -164,12 +186,12 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(LocalizationHelper.get('common.cancel')),
+            child: Text(l.commonCancel),
           ),
           if (e.isSafe)
             ElevatedButton.icon(
               icon: const Icon(Icons.check),
-              label: Text(LocalizationHelper.get('meal_review.dialog.confirm')),
+              label: Text(l.mealRevDialogConfirm),
               onPressed: () {
                 // TODO: Bolus senden
                 Navigator.of(ctx).pop();
