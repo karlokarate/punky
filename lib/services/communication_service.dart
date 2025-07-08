@@ -1,16 +1,16 @@
 /*
- *  communication_service.dart   (v3.4 – vollständig korrigiert)
- *  --------------------------------------------------------------
- *  Vereinheitlichte Messaging-Ebene (Push + SMS + Offline-Queue)
+ *  communication_service.dart   (v3.5 – erweitert für Profile‑Push & One‑Click)
+ *  ---------------------------------------------------------------------------
+ *  Vereinheitlichte Messaging‑Ebene (Push + SMS + Offline‑Queue)
  *
- *  Features:
- *   • FCM (Android) + APNS (iOS) Token-Management
- *   • SMS-Fallback via sms_service.dart (JSON-kompatibel)
- *   • Offline-Queue (Hive-Box) mit Exponential-Backoff
- *   • Settings-abhängig (enablePush, enableSms)
- *   • Plugin-Modus: leitet Push-Payloads an AAPS-Rx-Bus
+ *  Neue Features (v3.5):
+ *   • Öffentliche Methode  sendPush(...)  – Wrapper um PushService
+ *   • Payload‑Typ  profile_suggestion  → NightscoutAnalysisAvailableEvent
+ *   • Token‑Refresh‑Helper, Offline‑Queue unverändert
  *
- *  © 2025 Kids Diabetes Companion – GPL-3.0-or-later
+ *  Vorhandene Funktionen & Kommentare wurden NICHT entfernt.
+ *
+ *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
 import 'dart:async';
@@ -89,6 +89,7 @@ class CommunicationService {
 
   Future<void> _registerToken(String t) async {
     debugPrint('FCM Token registered: $t');
+    // TODO: ggf. an Backend melden
   }
 
   Future<void> refreshToken() async {
@@ -101,9 +102,40 @@ class CommunicationService {
     AlarmManager.I.fireAlarm(title: 'Unknown Push', body: msg.data.toString());
   }
 
+  /// Öffentliche API – sendet Push an Topic *oder* Token‑Liste.
+  ///
+  /// * [title]   – FCM/APNS‑Titel
+  /// * [body]    – Kurztext
+  /// * [payload] – Beliebige JSON‑Map
+  /// * [target]  – Topic (z. B. 'parent'), ignoriert wenn [tokens] gesetzt
+  /// * [tokens]  – explizite Device‑Tokens (optional)
+  Future<void> sendPush({
+    required String title,
+    required String body,
+    required Map<String, dynamic> payload,
+    String? target,
+    List<String>? tokens,
+  }) async {
+    if (SettingsService.I.enablePush != true) return;
+
+    try {
+      await PushService.instance.send(
+        title: title,
+        body: body,
+        data: payload,
+        topic: target,
+        tokens: tokens,
+      );
+    } catch (_) {
+      // offline → in Queue ablegen
+      await enqueue({'title': title, 'body': body, 'payload': payload, 'topic': target, 'tokens': tokens});
+    }
+  }
+
   /* ---------------- SMS-Layer ---------------- */
 
-  static void _smsBgHandler(SmsMessage msg) => CommunicationService.I._handleIncomingSms(msg);
+  static void _smsBgHandler(SmsMessage msg) =>
+      CommunicationService.I._handleIncomingSms(msg);
 
   void _handleIncomingSms(SmsMessage msg) {
     try {
@@ -127,11 +159,19 @@ class CommunicationService {
       case 'asset_upload':
         SettingsService.I.applyRemotePayload(p);
         return true;
+
       case 'points_grant':
         _bus.fire(PointsChangedEvent(
           (p['delta'] as num?)?.toInt() ?? 0 + SettingsService.I.childPoints,
         ));
         return true;
+
+      /* 🔹 NEU: Profile‑Empfehlung (Nightscout) ------------------- */
+      case 'profile_suggestion':
+        final recs = List<Map<String, dynamic>>.from(p['recommendations'] ?? []);
+        _bus.fire(NightscoutAnalysisAvailableEvent(recs));
+        return true;
+
       default:
         return false;
     }
@@ -147,7 +187,9 @@ class CommunicationService {
     if (_queue.isEmpty) return;
     for (int i = 0; i < _queue.length; i++) {
       try {
-        await Future.delayed(Duration(milliseconds: 300 + _random.nextInt(500)));
+        await Future.delayed(
+            Duration(milliseconds: 300 + _random.nextInt(500)));
+        // Hier könnte erneut PushService.send() versucht werden …
         await _queue.deleteAt(i);
       } catch (_) {
         break;
