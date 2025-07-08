@@ -62,6 +62,10 @@ class BolusEngine {
       source: isPlugin ? 'plugin' : 'standalone',
       insulin: units,
       ratio: ratio ?? 0,
+      carbs: carbs,
+      units: units,
+      reason: reason,
+      isSafe: isSafe,
     ));
   }
 

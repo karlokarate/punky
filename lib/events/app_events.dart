@@ -108,12 +108,18 @@ class BolusCalculatedEvent extends AppEvent {
   final double units;
   final String reason;
   final bool isSafe;
+  final double insulin;
+  final double ratio;
+  final String source;
 
   BolusCalculatedEvent({
     required this.carbs,
     required this.units,
     required this.reason,
     required this.isSafe,
+    required this.insulin,
+    required this.ratio,
+    required this.source,
   });
 
   @override
@@ -122,6 +128,9 @@ class BolusCalculatedEvent extends AppEvent {
     'units': units,
     'reason': reason,
     'isSafe': isSafe,
+    'insulin': insulin,
+    'ratio': ratio,
+    'source': source,
   };
 }
 
@@ -172,6 +181,9 @@ class AppEventFactory {
           units: (p['units'] as num).toDouble(),
           reason: p['reason'] ?? '',
           isSafe: p['isSafe'] == true,
+          insulin: (p['insulin'] as num).toDouble(),
+          ratio: (p['ratio'] as num).toDouble(),
+          source: p['source'] ?? '',
         );
       default:
         return GenericAapsEvent(type, p);
