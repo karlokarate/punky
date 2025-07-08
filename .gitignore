@@ -1,6 +1,5 @@
 # Miscellaneous
 *.class
-*.log
 *.pyc
 *.swp
 .DS_Store
@@ -18,10 +17,10 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code related
+# Entferntes Ignorieren von .vscode/, um Projektstruktur vollständig zu spiegeln
+# Falls du es wieder ausschließen willst, kommentiere die folgende Zeile ein:
+# .vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -31,7 +30,7 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
 
 # Symbolication related
 app.*.symbols
@@ -43,8 +42,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
 # Ergänzungen durch Punky‑Projekt
 .flutter-versions
 .melos_tool
-*.log
-.vscode/
+
+# Nur gezielte Logs ausschließen, nicht alle .log-Dateien
+flutter_01.log
+debug.log
