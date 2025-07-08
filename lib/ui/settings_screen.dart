@@ -1,9 +1,9 @@
 /*
- *  settings_screen.dart  (v4 – async-fix)
+ *  settings_screen.dart  (v5 – Eltern‑PIN‑Feld ergänzt)
  *  --------------------------------------------------------------
  *  Dynamischer UI‑Screen basierend auf settings_schema.yaml.
- *  Async/await‑Kompatibilität bei Field‑Settern korrigiert.
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
+ *  Neu: PIN‑Feld für Eltern‑Freigaben unter Abschnitt „Sicherheit“.
+ *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
 import 'dart:convert';
@@ -23,9 +23,9 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ChangeNotifierProvider.value(
-    value: _SettingsAdapter(SettingsService.I),
-    child: const _SettingsBody(),
-  );
+        value: _SettingsAdapter(SettingsService.I),
+        child: const _SettingsBody(),
+      );
 }
 
 /* ---------------- Body ---------------- */
@@ -96,6 +96,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
             onTap: () => _pickAvatarItem(context),
           ),
 
+          /* ----------- NEU: Abschnitt „Sicherheit“ ---------------- */
+          _sectionHeader(l.sectionSecurity, t),
+          _pinField(l.labelParentPin, adapter.pin, adapter.setPin),
+
           _sectionHeader(l.sectionInfo, t),
           Center(
             child: TextButton(
@@ -113,19 +117,20 @@ class _SettingsBodyState extends State<_SettingsBody> {
   /* ---------------- Helper Widgets ---------------- */
 
   Widget _sectionHeader(String title, ThemeData t) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
-    child: Text(
-      title,
-      style:
-      t.textTheme.titleMedium!.copyWith(color: t.colorScheme.secondary),
-    ),
-  );
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+        child: Text(
+          title,
+          style: t.textTheme.titleMedium!.copyWith(
+            color: t.colorScheme.secondary,
+          ),
+        ),
+      );
 
   Widget _textField(
-      String label,
-      String val,
-      Future<void> Function(String) setter,
-      ) =>
+    String label,
+    String val,
+    Future<void> Function(String) setter,
+  ) =>
       ListTile(
         title: Text(label),
         subtitle: TextFormField(
@@ -134,36 +139,51 @@ class _SettingsBodyState extends State<_SettingsBody> {
         ),
       );
 
+  Widget _pinField(
+    String label,
+    String val,
+    Future<void> Function(String) setter,
+  ) =>
+      ListTile(
+        title: Text(label),
+        subtitle: TextFormField(
+          initialValue: val,
+          obscureText: true,
+          keyboardType: TextInputType.number,
+          onFieldSubmitted: (v) async => await setter(v),
+        ),
+      );
+
   Widget _numberField(
-      String label,
-      int val,
-      Future<void> Function(int) setter,
-      ) =>
+    String label,
+    int val,
+    Future<void> Function(int) setter,
+  ) =>
       ListTile(
         title: Text(label),
         subtitle: TextFormField(
           initialValue: '$val',
           keyboardType: TextInputType.number,
           onFieldSubmitted: (v) async =>
-          await setter(int.tryParse(v) ?? val),
+              await setter(int.tryParse(v) ?? val),
         ),
       );
 
   Widget _dropdown(
-      String label,
-      String current,
-      Future<void> Function(String?) onChanged,
-      List<String> opts,
-      ) {
+    String label,
+    String current,
+    Future<void> Function(String?) onChanged,
+    List<String> opts,
+  ) {
     return ListTile(
       title: Text(label),
       trailing: DropdownButton<String>(
         value: current,
         items: opts
             .map((e) => DropdownMenuItem(
-          value: e,
-          child: Text(e.toUpperCase()),
-        ))
+                  value: e,
+                  child: Text(e.toUpperCase()),
+                ))
             .toList(),
         onChanged: (v) async => await onChanged(v),
       ),
@@ -171,10 +191,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
   }
 
   Widget _boolSwitch(
-      String label,
-      bool val,
-      Future<void> Function(bool) setter,
-      ) =>
+    String label,
+    bool val,
+    Future<void> Function(bool) setter,
+  ) =>
       SwitchListTile(
         title: Text(label),
         value: val,
@@ -189,7 +209,6 @@ class _SettingsBodyState extends State<_SettingsBody> {
 
     final bytes = await img.readAsBytes();
     if (bytes.lengthInBytes > 200 * 1024) {
-      // Kein async-Zwischenstopp mehr für ctx
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l.msgFileTooBig)),
@@ -210,7 +229,6 @@ class _SettingsBodyState extends State<_SettingsBody> {
       SnackBar(content: Text(l.msgItemAdded)),
     );
   }
-
 }
 
 /* ---------------- Adapter ---------------- */
@@ -232,6 +250,7 @@ class _SettingsAdapter extends ChangeNotifier {
   bool get sms => s.enableSms;
   bool get mute => s.muteAlarms;
   String get phone => s.parentPhone;
+  String get pin => s.parentPin;             // ← NEU
 
   int get ppMeal => s.pointsPerMeal;
   int get ppSnack => s.pointsPerSnack;
@@ -256,6 +275,7 @@ class _SettingsAdapter extends ChangeNotifier {
   Future<void> setSms(bool v) => _set(() => s.setEnableSms(v));
   Future<void> setMute(bool v) => _set(() => s.setMuteAlarms(v));
   Future<void> setPhone(String v) => _set(() => s.setParentPhone(v));
+  Future<void> setPin(String v) => _set(() => s.setParentPin(v)); // ← NEU
 
   Future<void> setPpMeal(int v) => _set(() => s.setPointsPerMeal(v));
   Future<void> setPpSnack(int v) => _set(() => s.setPointsPerSnack(v));
