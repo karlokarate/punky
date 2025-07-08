@@ -61,6 +61,7 @@ dependencies:
   speech_to_text: any
   provider: any
   url_launcher: any
+  string_similarity: ^2.0.0
 
   # Offline-Spracherkennung
   vosk_flutter: ^0.3.48  # bleibt, aber wir verwenden downgrades unten

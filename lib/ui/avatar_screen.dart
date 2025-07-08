@@ -1,116 +1,88 @@
-/*
- *  avatar_screen.dart  (v2 – i18n)
- *  --------------------------------------------------------------
- *  Vollbild‑Editor:
- *    – Zeigt aktuellen Avatar (zusammengesetzte PNG‑Layer)
- *    – Listen‑Tabs je Layer (Body, Head, Accessory, Weapon, Wing)
- *    – Lock‑Icon für Items, die noch nicht freigeschaltet sind
- *    – Eltern können im Eltern‑Profil neue PNGs hochladen
- *
- *  Projektpfad: lib/ui/avatar_screen.dart
- */
+// -----------------------------------------------------------------------------
+//  avatar_screen.dart  (v3 – full‑featured)
+//  -----------------------------------------------------------------------------
+//  • Tab‑basierter Editor für alle Avatar‑Layer
+//  • Sperren‑/Freischalten‑Anzeige inkl. Tooltip für Unlock‑Bedingungen
+//  • Auswahl wird live gespeichert (AvatarService)
+//  • Unterstützt Custom‑Uploads (lokale PNGs)
+//  • Mini‑Gamification: Zufällige Preview‑Würfel‑Action per FAB
+//  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
+// -----------------------------------------------------------------------------
 
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../l10n/app_localizations.dart';
 
 import '../services/avatar_service.dart';
-import '../services/settings_service.dart';
 
 class AvatarScreen extends StatelessWidget {
   const AvatarScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final a = AvatarService.I;
-
-    return ChangeNotifierProvider.value(
-      value: _AvatarAdapter(a),
-      child: const _AvatarBody(),
-    );
-  }
+  Widget build(BuildContext context) => ChangeNotifierProvider.value(
+    value: AvatarService.I,
+    child: const _Body(),
+  );
 }
 
-class _AvatarBody extends StatelessWidget {
-  const _AvatarBody();
+/* ═══════════════════════════════════ UI‑BODY ═══════════════════════════════ */
+
+class _Body extends StatelessWidget {
+  const _Body();
+
+  static const _layers = [
+    'background',
+    'wing',
+    'body',
+    'head',
+    'accessory',
+    'weapon'
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final a = Provider.of<_AvatarAdapter>(context);
     final l = AppLocalizations.of(context)!;
-    final layers = ['background', 'wing', 'body', 'head', 'accessory', 'weapon'];
 
     return DefaultTabController(
-      length: layers.length,
+      length: _layers.length,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l.avatarTitle),
           bottom: TabBar(
-            isScrollable: true,
-            tabs:
-            layers.map((layer) => Tab(text: _layerLabel(l, layer))).toList(),
-          ),
+              isScrollable: true,
+              tabs: _layers.map((e) => Tab(text: _label(l, e))).toList()),
+        ),
+        floatingActionButton: FloatingActionButton(
+          tooltip: l.avatarRandomize,
+          onPressed: () {
+            final rnd = _layers
+                .map((layer) =>
+                AvatarService.I.itemsForLayer(layer).where((i) => AvatarService.I.itemUnlocked(i.key)))
+                .map((l) => l.isEmpty ? null : (l.toList()..shuffle()).first)
+                .whereType<AvatarItem>()
+                .toList();
+            if (rnd.isEmpty) return;
+            for (final i in rnd) {
+              AvatarService.I.equip(i.layer, i.key);
+            }
+          },
+          child: const Icon(Icons.shuffle),
         ),
         body: TabBarView(
-          children: layers.map((layer) => _layerTab(layer, a)).toList(),
+          children: _layers.map((layer) => _LayerTab(layer)).toList(),
         ),
       ),
     );
   }
 
-  Widget _layerTab(String layer, _AvatarAdapter a) {
-    final items = a.itemsForLayer(layer);
-    return Column(
-      children: [
-        const SizedBox(height: 12),
-        _AvatarPreview(a),
-        const SizedBox(height: 12),
-        Expanded(
-          child: GridView.count(
-            crossAxisCount: 4,
-            children: items.map((it) {
-              final unlocked = a.unlocked(it.key);
-              final selected = a.isSelected(layer, it.key);
-              return GestureDetector(
-                onTap: unlocked ? () => a.equip(layer, it.key) : () {},
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: selected ? Colors.amber : Colors.grey,
-                          width: selected ? 3 : 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Image(
-                        image: it.assetPath.startsWith('/')
-                            ? FileImage(File(it.assetPath))
-                            : AssetImage(it.assetPath) as ImageProvider,
-                      ),
-                    ),
-                    if (!unlocked)
-                      const Icon(Icons.lock, color: Colors.red, size: 24),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _layerLabel(AppLocalizations l, String layer) {
+  String _label(AppLocalizations l, String layer) {
     switch (layer) {
       case 'background':
         return l.avatarBackground;
       case 'wing':
-        return 'Wing';
+        return l.avatarWing;
       case 'body':
         return l.avatarBody;
       case 'head':
@@ -125,51 +97,118 @@ class _AvatarBody extends StatelessWidget {
   }
 }
 
-class _AvatarPreview extends StatelessWidget {
-  final _AvatarAdapter a;
-  const _AvatarPreview(this.a);
+/* ══════════════════════════════════ LAYER TAB ══════════════════════════════ */
+
+class _LayerTab extends StatelessWidget {
+  const _LayerTab(this.layer);
+  final String layer;
+
   @override
   Widget build(BuildContext context) {
-    final layers = ['wing', 'body', 'head', 'accessory', 'weapon'];
-    return SizedBox(
-      width: 140,
-      height: 140,
-      child: Stack(
-        fit: StackFit.expand,
-        children: layers.map((layer) {
-          final itemKey = a.selectedItem(layer);
-          if (itemKey == null) return const SizedBox.shrink();
-          final item = a.byKey(itemKey)!;
-          final img = item.assetPath.startsWith('/')
-              ? FileImage(File(item.assetPath))
-              : AssetImage(item.assetPath) as ImageProvider;
-          return Image(image: img);
-        }).toList(),
-      ),
+    final svc = context.watch<AvatarService>();
+    final items = svc.itemsForLayer(layer);
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        const _AvatarPreview(),
+        const SizedBox(height: 16),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(8),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4, childAspectRatio: .9),
+            itemCount: items.length,
+            itemBuilder: (_, i) => _ItemTile(layer: layer, item: items[i]),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/* ---------------- Adapter ---------------- */
+/* ══════════════════════════════════ ITEM TILE ══════════════════════════════ */
 
-class _AvatarAdapter extends ChangeNotifier {
-  final AvatarService _a;
-  _AvatarAdapter(this._a);
+class _ItemTile extends StatelessWidget {
+  const _ItemTile({required this.layer, required this.item});
 
-  List<AvatarItem> itemsForLayer(String layer) =>
-      _a.catalog.where((e) => e.layer == layer).toList();
+  final String layer;
+  final AvatarItem item;
 
-  bool unlocked(String key) => _a.itemUnlocked(key);
+  @override
+  Widget build(BuildContext context) {
+    final svc = context.watch<AvatarService>();
+    final unlocked = svc.itemUnlocked(item.key);
+    final selected = svc.selectedItem(layer) == item.key;
 
-  bool isSelected(String layer, String key) => _a.state.equipped[layer] == key;
+    final imgProvider = item.assetPath.startsWith('/')
+        ? FileImage(File(item.assetPath))
+        : AssetImage(item.assetPath) as ImageProvider;
 
-  String? selectedItem(String layer) => _a.state.equipped[layer];
+    return GestureDetector(
+      onTap: unlocked ? () => svc.equip(layer, item.key) : null,
+      child: Tooltip(
+        message: unlocked
+            ? item.name
+            : _lockedMsg(context, item.unlock, AppLocalizations.of(context)!),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: selected ? Colors.amber : Colors.grey,
+                    width: selected ? 3 : 1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Image(image: imgProvider, fit: BoxFit.contain),
+            ),
+            if (!unlocked)
+              const Icon(Icons.lock, size: 28, color: Colors.redAccent),
+          ],
+        ),
+      ),
+    );
+  }
 
-  AvatarItem? byKey(String key) =>
-      _a.catalog.firstWhere((e) => e.key == key, orElse: () => null);
+  String _lockedMsg(BuildContext ctx, UnlockCondition? c, AppLocalizations l) {
+    if (c == null) return l.avatarLocked;
+    final pts = c.minPoints;
+    final lvl = c.minLevel;
+    if (pts != null && lvl != null) {
+      return l.avatarLockedPtsLvl(pts, lvl);
+    } else if (pts != null) {
+      return l.avatarLockedPts(pts);
+    } else if (lvl != null) {
+      return l.avatarLockedLvl(lvl);
+    }
+    return l.avatarLocked;
+  }
+}
 
-  Future<void> equip(String layer, String key) async {
-    await _a.equip(layer, key);
-    notifyListeners();
+/* ══════════════════════════════════ PREVIEW ════════════════════════════════ */
+
+class _AvatarPreview extends StatelessWidget {
+  const _AvatarPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    final svc = context.watch<AvatarService>();
+    final imgPaths = svc.getImagePaths();
+
+    return SizedBox(
+      width: 200,
+      height: 200,
+      child: Stack(
+        fit: StackFit.expand,
+        children: imgPaths.map((p) {
+          final provider =
+          p.startsWith('/') ? FileImage(File(p)) : AssetImage(p) as ImageProvider;
+          return Image(image: provider);
+        }).toList(),
+      ),
+    );
   }
 }

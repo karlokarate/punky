@@ -1,5 +1,5 @@
 /*
- *  speech_service.dart  (v4 – FIXED VOSK API USAGE)
+ *  speech_service.dart  (v5 – FIXED VOSK API USAGE)
  *  --------------------------------------------------------------
  *  Whisper: Online mit Sprache "de"
  *  Vosk: Offline mit Modell im Asset-Verzeichnis
@@ -41,8 +41,8 @@ class SpeechService {
   late SettingsService _settings;
   late EventBus _bus;
 
-  VoskModel? _voskModel;
-  VoskRecognizer? _voskRecognizer;
+  Recognizer? _voskRecognizer;
+
   stt.SpeechToText? _iosFallback;
 
   Future<void> init(EventBus bus) async {
@@ -58,19 +58,10 @@ class SpeechService {
 
   Future<void> _initOfflineEngine() async {
     try {
-      const modelAsset = 'assets/models/vosk-model-small-de-0.15';
-      final appDir = await getApplicationDocumentsDirectory();
-      final modelPath = '${appDir.path}/vosk_model';
-
-      if (!await Directory(modelPath).exists()) {
-        await Directory(modelPath).create(recursive: true);
-        // TODO: Alle Modelldateien extrahieren
-        final config = await rootBundle.load('$modelAsset/model.conf');
-        final file = File('$modelPath/model.conf');
-        await file.writeAsBytes(config.buffer.asUint8List());
-      }
-
-      _voskModel = VoskModel(modelPath);
+      final vosk = VoskFlutterPlugin.instance();
+      final modelPath = await ModelLoader().loadFromAssets('assets/models/vosk-model-small-de-0.15.zip');
+      final model = await vosk.createModel(modelPath);
+      _voskRecognizer = await vosk.createRecognizer(model: model, sampleRate: 16000);
     } catch (_) {
       _iosFallback = stt.SpeechToText();
     }
@@ -121,11 +112,9 @@ class SpeechService {
 
   Future<void> _listenOffline() async {
     try {
-      if (_voskModel != null) {
-        _voskRecognizer = VoskRecognizer(_voskModel!, 16000);
+      if (_voskRecognizer != null) {
         final audioPath = '${(await getTemporaryDirectory()).path}/vosk.wav';
 
-        // Aufnahme vorausgesetzt vorhanden
         if (!await _recordNative(audioPath)) {
           _fail('no_audio');
           return;
@@ -133,10 +122,13 @@ class SpeechService {
 
         final file = File(audioPath);
         final bytes = await file.readAsBytes();
-        _voskRecognizer!.acceptWaveForm(bytes);
-        final result = jsonDecode(_voskRecognizer!.finalResult())['text'];
+        final isFinal = await _voskRecognizer!.acceptWaveformBytes(bytes);
+        final resultJson = isFinal
+            ? await _voskRecognizer!.getFinalResult()
+            : await _voskRecognizer!.getResult();
+        final result = jsonDecode(resultJson)['text'] as String;
 
-        if ((result as String).isEmpty) {
+        if (result.isEmpty) {
           _fail('empty');
         } else {
           _handleTranscript(result);

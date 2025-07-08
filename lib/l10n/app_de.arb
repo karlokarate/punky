@@ -23,6 +23,30 @@
   "avatarLayerTitle": "Avatar",
   "avatarTitle": "Avatar",
   "avatarWeapon": "Waffe",
+  "avatarItemLocked": "Noch nicht freigeschaltet",
+  "avatarItemTapToEquip": "Antippen zum Ausrüsten",
+  "avatarItemTapToPreview": "Lange tippen für Vorschau",
+  "avatarItemUpload": "Eigenes Item hochladen",
+  "avatarItemUnlocked": "Freigeschaltet!",
+  "avatarPreviewTitle": "Dein Avatar",
+  "avatarEquipSuccess": "{item} wurde ausgerüstet!",
+  "avatarEquipFailed": "{item} konnte nicht ausgerüstet werden.",
+  "avatarUnlockedNewItem": "Neues Avatar-Item freigeschaltet: {item}!",
+  "@avatarEquipSuccess": {
+    "placeholders": {
+      "item": {}
+    }
+  },
+  "@avatarEquipFailed": {
+    "placeholders": {
+      "item": {}
+    }
+  },
+  "@avatarUnlockedNewItem": {
+    "placeholders": {
+      "item": {}
+    }
+  },
   "bolusNoteAuto": "Auto‑Bolus via BolusEngine",
   "bolusReasonAaps": "AAPS‑Faktor {ratio} g/IE",
   "@bolusReasonAaps": {
@@ -373,4 +397,5 @@
       "type": {}
     }
   }
+
 }

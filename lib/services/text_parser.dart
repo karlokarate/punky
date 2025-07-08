@@ -3,11 +3,12 @@ import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
+import 'package:event_bus/event_bus.dart';
 
 import '../l10n/app_localizations.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
-import 'dart:ui'
+final EventBus eventBus = AppEventBus.I.bus;
 
 class ParsedItem {
   final double amount;
@@ -134,6 +135,7 @@ class TextParser {
       'twelve': 12,
     };
 
-    return numbers[lower];
+    return numbers[lower]?.toDouble();
+
   }
 }

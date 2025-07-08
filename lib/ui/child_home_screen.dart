@@ -7,15 +7,16 @@
  *  • Punktestand & Level‑Anzeige (lokalisiert)
  */
 
+import '../main.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 // ⬇️ NEU: Lokalisierung importieren
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../l10n/app_localizations.dart';
 
-import '../app_initializer.dart';
+import '../core/app_initializer.dart';
 import '../events/app_events.dart';
 import '../services/aaps_logic_port.dart';
 import '../services/avatar_service.dart';

@@ -233,6 +233,60 @@ abstract class AppLocalizations {
   /// **'Waffe'**
   String get avatarWeapon;
 
+  /// No description provided for @avatarItemLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Noch nicht freigeschaltet'**
+  String get avatarItemLocked;
+
+  /// No description provided for @avatarItemTapToEquip.
+  ///
+  /// In en, this message translates to:
+  /// **'Antippen zum Ausrüsten'**
+  String get avatarItemTapToEquip;
+
+  /// No description provided for @avatarItemTapToPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Lange tippen für Vorschau'**
+  String get avatarItemTapToPreview;
+
+  /// No description provided for @avatarItemUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Eigenes Item hochladen'**
+  String get avatarItemUpload;
+
+  /// No description provided for @avatarItemUnlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Freigeschaltet!'**
+  String get avatarItemUnlocked;
+
+  /// No description provided for @avatarPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dein Avatar'**
+  String get avatarPreviewTitle;
+
+  /// No description provided for @avatarEquipSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{item} wurde ausgerüstet!'**
+  String avatarEquipSuccess(Object item);
+
+  /// No description provided for @avatarEquipFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{item} konnte nicht ausgerüstet werden.'**
+  String avatarEquipFailed(Object item);
+
+  /// No description provided for @avatarUnlockedNewItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Neues Avatar-Item freigeschaltet: {item}!'**
+  String avatarUnlockedNewItem(Object item);
+
   /// No description provided for @bolusNoteAuto.
   ///
   /// In en, this message translates to:

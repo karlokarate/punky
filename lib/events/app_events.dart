@@ -1,5 +1,5 @@
 /*
- *  app_events.dart  (v5 – FINAL)
+ *  app_events.dart  (v6 – FINAL with Sync Events)
  *  --------------------------------------------------------------
  *  Alle Event​-Klassen, JSON​-serialisierbar für AAPS​-Bridge.
  *
@@ -134,6 +134,46 @@ class BolusCalculatedEvent extends AppEvent {
   };
 }
 
+/* ---------- Sync Events ---------- */
+
+class SettingsChangedEvent extends AppEvent {
+  final String key;
+  final dynamic value;
+  SettingsChangedEvent({required this.key, required this.value});
+  @override
+  Map<String, dynamic> toJson() => {'key': key, 'value': value};
+}
+
+class SnackLoggedEvent extends AppEvent {
+  final double carbs;
+  final DateTime time;
+  SnackLoggedEvent({required this.carbs, required this.time});
+  @override
+  Map<String, dynamic> toJson() => {
+    'carbs': carbs,
+    'time': time.toIso8601String(),
+  };
+}
+
+class ParentApprovalEvent extends AppEvent {
+  final String action;
+  final bool approved;
+  ParentApprovalEvent({required this.action, required this.approved});
+  @override
+  Map<String, dynamic> toJson() => {
+    'action': action,
+    'approved': approved,
+  };
+}
+
+class NewMealDetectedEvent extends AppEvent {
+  final String source;
+
+  NewMealDetectedEvent({required this.source});
+
+  @override
+  Map<String, dynamic> toJson() => {'source': source};
+}
 /* ---------- Avatar ---------- */
 
 abstract class AvatarEvent extends AppEvent {}

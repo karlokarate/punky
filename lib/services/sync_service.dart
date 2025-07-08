@@ -6,6 +6,7 @@ import 'package:event_bus/event_bus.dart';
 import '../events/app_events.dart';
 import '../core/event_bus.dart';
 import 'push_service.dart';
+final EventBus eventBus = AppEventBus.I.bus;
 
 /// SyncService: synchronisiert Events lokal (Push/SMS) oder mit Server
 class SyncService {

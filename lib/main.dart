@@ -8,7 +8,7 @@
  */
 
 import 'package:flutter/material.dart';
-import 'app_initializer.dart';
+import 'core/app_initializer.dart';
 import 'ui/start_screen.dart';
 import 'ui/child_home_screen.dart';
 

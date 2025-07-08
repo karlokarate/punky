@@ -78,6 +78,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get avatarWeapon => 'Waffe';
 
   @override
+  String get avatarItemLocked => 'Noch nicht freigeschaltet';
+
+  @override
+  String get avatarItemTapToEquip => 'Antippen zum Ausrüsten';
+
+  @override
+  String get avatarItemTapToPreview => 'Lange tippen für Vorschau';
+
+  @override
+  String get avatarItemUpload => 'Eigenes Item hochladen';
+
+  @override
+  String get avatarItemUnlocked => 'Freigeschaltet!';
+
+  @override
+  String get avatarPreviewTitle => 'Dein Avatar';
+
+  @override
+  String avatarEquipSuccess(Object item) {
+    return '$item wurde ausgerüstet!';
+  }
+
+  @override
+  String avatarEquipFailed(Object item) {
+    return '$item konnte nicht ausgerüstet werden.';
+  }
+
+  @override
+  String avatarUnlockedNewItem(Object item) {
+    return 'Neues Avatar-Item freigeschaltet: $item!';
+  }
+
+  @override
   String get bolusNoteAuto => 'Auto‑Bolus via BolusEngine';
 
   @override
