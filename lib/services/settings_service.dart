@@ -1,14 +1,10 @@
 /*
- *  settings_service.dart  (v8 – MERGED FINAL)
+ *  settings_service.dart  (v9 – PARENT‑PIN + COMPAT)
  *  --------------------------------------------------------------------------
- *  • Vereint die komplette Funktionsvielfalt der bisherigen „v7 – FINAL +
- *    SETUP SUPPORT“ (Setup‑Wizard, Remote‑Update, Plugin‑Mirror) mit den neuen
- *    Feldern, die der Parent‑Screen / Nightscout‑Service benötigt
- *    (gptEndpoint, pushEndpoint, parentTopic, maxBolusUnits).
- *  • Liefert zusätzlich ChangeNotifier‑Reaktivität, sodass Widgets via
- *    `context.watch<SettingsService>()` sofort Aktualisierungen erhalten.
- *  • Beibehaltung sämtlicher alten Pref‑Keys; neue Keys nutzen den Präfix
- *    `kidsapp_` für Konsistenz.
+ *  • Basierend auf v8 – MERGED FINAL (Setup‑Wizard, Remote‑Update, Plugin‑Mirror)
+ *  • Neu: Feld  parentPin  (Getter, Setter, Remote‑Update‑Support)
+ *  • Alle bisherigen Pref‑Keys unverändert; neuer Key `kidsapp_parent_pin`
+ *  • Vollständig rückwärtskompatibel
  *
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
@@ -122,6 +118,13 @@ class SettingsService extends ChangeNotifier {
       _set('kidsapp_phone', v);
 
   /* ----------------------------------------------------------------------- */
+  /*  Eltern‑PIN (neu)                                                       */
+  /* ----------------------------------------------------------------------- */
+  String get parentPin => _prefs.getString('kidsapp_parent_pin') ?? '';
+  Future<void> setParentPin(String v) async =>
+      _set('kidsapp_parent_pin', v);
+
+  /* ----------------------------------------------------------------------- */
   /*  Betriebsmodi / Integration                                             */
   /* ----------------------------------------------------------------------- */
   String get speechMode =>
@@ -229,6 +232,7 @@ class SettingsService extends ChangeNotifier {
       'enableSms': () => setEnableSms(value),
       'muteAlarms': () => setMuteAlarms(value),
       'parentPhone': () => setParentPhone(value),
+      'parentPin': () => setParentPin(value),                  // ← NEU
       'pointsPerMeal': () => setPointsPerMeal(value),
       'pointsPerSnack': () => setPointsPerSnack(value),
       'bonusEverySnacks': () => setBonusEverySnacks(value),
