@@ -1,5 +1,72 @@
 {
   "@@locale": "en",
+
+  "@startTitle": {
+    "description": "Begrüßungstitel auf dem Startscreen"
+  },
+  "@startChild": {
+    "description": "Button-Label: Kind wählen"
+  },
+  "@startParent": {
+    "description": "Button-Label: Elternteil wählen"
+  },
+  "@startSettings": {
+    "description": "Button-Label: Einstellungen"
+  },
+  "@startProfile": {
+    "description": "Textlink zur Profilauswahl"
+  },
+
+
+  "sectionNightscout": "Nightscout",
+  "@sectionNightscout": { "description": "Nachtwächter-Konfiguration" },
+  "labelNsUrl": "Nightscout‑URL",
+  "@labelNsUrl": { "description": "URL zur Nightscout-Instanz" },
+  "labelNsSecret": "API‑Secret (SHA1)",
+  "@labelNsSecret": { "description": "Nightscout-API-Secret" },
+
+  "sectionApiKeys": "API‑Schlüssel",
+  "@sectionApiKeys": { "description": "Bereich für externe API-Zugänge" },
+  "labelGpt": "GPT‑Schlüssel",
+  "labelWhisper": "Whisper‑Schlüssel",
+  "labelVision": "Vision‑Schlüssel",
+
+  "sectionModes": "Modi",
+  "@sectionModes": { "description": "Erkennungs- und Betriebsmodi" },
+  "labelSpeechMode": "Sprachmodus",
+  "labelImageMode": "Bildmodus",
+
+  "sectionNotifications": "Benachrichtigungen",
+  "@sectionNotifications": { "description": "Push, SMS & Mute" },
+  "labelPush": "Push aktivieren",
+  "labelSms": "SMS aktivieren",
+  "labelMute": "Stumm‑Modus",
+  "labelPhone": "Eltern‑Telefonnummer",
+
+  "sectionPoints": "Punkte‑System",
+  "@sectionPoints": { "description": "Gamification-Konfiguration" },
+  "labelPpMeal": "Punkte pro Mahlzeit",
+  "labelPpSnack": "Punkte pro Snack",
+  "labelBonus": "Snack‑Bonus (X Snacks)",
+
+  "sectionHealth": "Gesundheit",
+  "@sectionHealth": { "description": "Einstellungen für Warnungen und Schwellenwerte" },
+  "labelCarbWarn": "KH‑Warnschwelle (g)",
+
+  "sectionAvatar": "Avatar",
+  "@sectionAvatar": { "description": "Avatar-Einstellungen" },
+  "labelTheme": "Avatar‑Thema",
+  "labelUploadItem": "Item hochladen",
+
+  "sectionInfo": "Info",
+  "@sectionInfo": { "description": "Verweise und Impressum" },
+  "linkAboutAAPS": "Über AAPS",
+
+  "msgFileTooBig": "Datei zu groß",
+  "@msgFileTooBig": { "description": "Wird gezeigt, wenn das hochgeladene Bild zu groß ist." },
+
+  "msgItemAdded": "Item hinzugefügt!",
+  "@msgItemAdded": { "description": "Wird gezeigt, wenn ein Avatar-Item erfolgreich hinzugefügt wurde." },
   "aiEnabled": "GPT enable",
   "aiMaxTokens": "Token limit",
   "aiModel": "GPT‑Modell",
@@ -32,6 +99,16 @@
   "avatarEquipSuccess": "{item} wurde ausgerüstet!",
   "avatarEquipFailed": "{item} konnte nicht ausgerüstet werden.",
   "avatarUnlockedNewItem": "Neues Avatar-Item freigeschaltet: {item}!",
+  "avatarRandomize": "Zufällig",
+  "avatarWing": "Flügel",
+
+  "avatarLocked": "Gesperrt",
+  "avatarLockedPts": "Benötigt {points} Punkte",
+  "@avatarLockedPts": { "placeholders": { "points": {} } },
+  "avatarLockedLvl": "Benötigt Level {level}",
+  "@avatarLockedLvl": { "placeholders": { "level": {} } },
+  "avatarLockedPtsLvl": "Benötigt {points} Punkte und Level {level}",
+  "@avatarLockedPtsLvl": { "placeholders": { "points": {}, "level": {} } },
   "@avatarEquipSuccess": {
     "placeholders": {
       "item": {}
@@ -156,7 +233,13 @@
   "homeBtnSnack": "Snack",
   "homeCob": "COB",
   "homeIob": "IOB",
-  "homeLevel": "Level {level}",
+  "homeLevel": "Level {level}",
+  "homeMsgPoints": "+{points} Punkte!",
+  "@homeMsgPoints": { "placeholders": { "points": {} } },
+
+  "btnMeal": "MAHLZEIT",
+  "btnSnack": "SNACK",
+  "btnGuess": "RATEN",
   "@homeLevel": {
     "placeholders": {
       "level": {}

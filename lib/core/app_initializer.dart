@@ -56,8 +56,7 @@ class AppInitializer {
     await SmsService.instance.init();
 
     final avatar = AvatarService.I;
-    await avatar.init();
-    avatar.attachEventBus(bus.bus);
+    await avatar.init(bus.bus);
 
     await GamificationService.instance.init();
     await GptService.I.init(bus.bus);

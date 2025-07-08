@@ -20,7 +20,7 @@ import '../services/settings_service.dart';
 import '../services/product_matcher.dart';
 import '../services/aaps_carb_sync_service.dart';
 import '../services/text_parser.dart';
-import '../l10n/app_localizations.dart';
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
 class MealReviewComponent {
   final String name;
@@ -37,13 +37,23 @@ class MealReviewComponent {
     this.isNewlyAdded = false,
   });
 
-  Map toJson() => {
+  Map<String, dynamic> toJson() => {
     'name': name,
     'grams': grams,
     'carbsPer100g': carbsPer100g,
     'carbsTotal': carbsTotal,
     'isNewlyAdded': isNewlyAdded,
   };
+
+  factory MealReviewComponent.fromJson(Map<String, dynamic> json) {
+    return MealReviewComponent(
+      name: json['name'] ?? '',
+      grams: (json['grams'] as num).toDouble(),
+      carbsPer100g: (json['carbsPer100g'] as num).toDouble(),
+      carbsTotal: (json['carbsTotal'] as num).toDouble(),
+      isNewlyAdded: json['isNewlyAdded'] == true,
+    );
+  }
 }
 
 class MealAnalyzer {
@@ -89,13 +99,11 @@ class MealAnalyzer {
     _bus.fire(MealAnalyzedEvent(
       totalCarbs: totalCarbs,
       components: List<Map<String, dynamic>>.from(results.map((e) => e.toJson())),
-
-
     ));
 
     _processWarnings(totalCarbs, fuzzyHitOccurred, loc);
     await _sync.persistMeal(
-        totalCarbs, List<Map<String,dynamic>>.from(results.map((e) => e.toJson())));
+        totalCarbs, List<Map<String, dynamic>>.from(results.map((e) => e.toJson())));
 
     if (_settings.insulinRatio > 0) {
       final units = _round(totalCarbs / _settings.insulinRatio);
@@ -130,15 +138,14 @@ class MealAnalyzer {
   void _processWarnings(
       double totalCarbs, bool fuzzy, AppLocalizations loc) {
     final warnThreshold = _settings.carbWarnThreshold;
-    final List warns = [];
+    final List<String> warns = [];
     if (totalCarbs >= warnThreshold) {
       warns.add(loc.carbAnalysisWarnHigh(_round(totalCarbs).toString()));
     }
     if (fuzzy) warns.add(loc.carbAnalysisWarnFuzzy);
     if (totalCarbs > 250) warns.add(loc.carbAnalysisWarnExcessive);
     if (warns.isNotEmpty) {
-      _bus.fire(MealWarningEvent(warnings: List<String>.from(warns)));
-
+      _bus.fire(MealWarningEvent(warnings: warns));
     }
   }
 

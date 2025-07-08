@@ -12,7 +12,7 @@
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/widgets.dart';
 
-import '../l10n/app_localizations.dart';
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import 'aaps_logic_port.dart';
@@ -29,7 +29,7 @@ class BolusEngine {
 
   /// Hauptlogik zur Berechnung (aber nicht Ausführung!) eines Bolus
   Future<void> calculateBolus(double carbs, BuildContext context) async {
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     double? ratio;
     double units = 0;
@@ -71,7 +71,7 @@ class BolusEngine {
 
   /// Optionaler Bolus​-Upload (Standalone → NS-Treatment)
   Future<void> deliverBolus(double units, double carbs, BuildContext context) async {
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
     final isPlugin = _ns.isPlugin;
 
     if (isPlugin) {

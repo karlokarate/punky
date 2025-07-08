@@ -13,8 +13,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../l10n/app_localizations.dart';
-
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 import '../services/avatar_service.dart';
 
 class AvatarScreen extends StatelessWidget {
@@ -43,7 +42,7 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
 
     return DefaultTabController(
       length: _layers.length,
@@ -58,16 +57,23 @@ class _Body extends StatelessWidget {
           tooltip: l.avatarRandomize,
           onPressed: () {
             final rnd = _layers
-                .map((layer) =>
-                AvatarService.I.itemsForLayer(layer).where((i) => AvatarService.I.itemUnlocked(i.key)))
-                .map((l) => l.isEmpty ? null : (l.toList()..shuffle()).first)
+                .map((layer) {
+              final candidates = AvatarService.I
+                  .itemsForLayer(layer)
+                  .where((i) => AvatarService.I.itemUnlocked(i.key))
+                  .toList();
+              if (candidates.isEmpty) return null;
+              candidates.shuffle();
+              return candidates.first;
+            })
                 .whereType<AvatarItem>()
                 .toList();
-            if (rnd.isEmpty) return;
+
             for (final i in rnd) {
               AvatarService.I.equip(i.layer, i.key);
             }
           },
+
           child: const Icon(Icons.shuffle),
         ),
         body: TabBarView(
@@ -150,7 +156,7 @@ class _ItemTile extends StatelessWidget {
       child: Tooltip(
         message: unlocked
             ? item.name
-            : _lockedMsg(context, item.unlock, AppLocalizations.of(context)!),
+            : _lockedMsg(context, item.unlock, AppLocalizations.of(context)),
         child: Stack(
           alignment: Alignment.center,
           children: [

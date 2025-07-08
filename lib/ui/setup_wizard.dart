@@ -1,13 +1,13 @@
 /*
- *  setup_wizard.dart  (v1 – SETUP FLOW, lokalisiert)
+ *  setup_wizard.dart  (v4 – FINAL)
  *  --------------------------------------------------------------
- *  Initialer Einrichtungsassistent bei App-Start (wenn nicht konfiguriert).
+ *  Initialer Einrichtungsassistent bei App‑Start.
+ *  Erkennt aktive AAPS-Verbindung über AapsLogicPort.
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
 import '../services/settings_service.dart';
 import '../services/aaps_logic_port.dart';
@@ -21,8 +21,7 @@ class SetupWizard extends StatefulWidget {
 
 class _SetupWizardState extends State<SetupWizard> {
   bool useAAPS = false;
-  bool setupComplete = false;
-
+  bool loading = true;
   final _formKey = GlobalKey<FormState>();
   final _urlController = TextEditingController();
   final _apiController = TextEditingController();
@@ -30,65 +29,96 @@ class _SetupWizardState extends State<SetupWizard> {
   @override
   void initState() {
     super.initState();
-    useAAPS = AAPSLogicPort.isConnected;
-    if (useAAPS) {
-      _urlController.text = AAPSLogicPort.nightscoutUrl ?? '';
-      _apiController.text = '✓ via AAPS';
-    }
+    _checkAAPS();
+  }
+
+  Future<void> _checkAAPS() async {
+    final profile = await AapsLogicPort.getActiveProfile();
+    if (!mounted) return;
+    setState(() {
+      useAAPS = profile != null;
+      loading = false;
+      if (useAAPS) {
+        _urlController.text = profile?['nsUrl'] ?? '';
+        _apiController.text = '✓ via AAPS';
+      }
+    });
   }
 
   Future<void> _submit() async {
+    final l = AppLocalizations.of(context);
+    if (!mounted) return;
+
     if (_formKey.currentState?.validate() ?? false) {
       await SettingsService.I.setNightscoutUrl(_urlController.text);
       if (!useAAPS) {
         await SettingsService.I.setNightscoutSecret(_apiController.text);
       }
-      await SettingsService.I.setInitialSetupDone();
-      setState(() => setupComplete = true);
-      if (mounted) Navigator.pushReplacementNamed(context, '/start');
+      await SettingsService.I.setInitialSetupDone(true);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/start');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.setupValidateRequired)),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.setup.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
+      appBar: AppBar(title: Text(l.setupTitle)),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               Text(
-                useAAPS ? l.setup.intro_aaps : l.setup.intro_manual,
+                useAAPS ? l.setupIntroAaps : l.setupIntroManual,
                 style: t.textTheme.bodyLarge,
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _urlController,
-                decoration: InputDecoration(labelText: l.setup.label_url),
+                decoration: InputDecoration(labelText: l.setupLabelUrl),
                 validator: (v) =>
-                (v == null || v.isEmpty) ? l.setup.validate_required : null,
+                (v == null || v.isEmpty) ? l.setupValidateRequired : null,
               ),
-              if (!useAAPS)
+              if (!useAAPS) ...[
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _apiController,
-                  decoration: InputDecoration(labelText: l.setup.label_secret),
+                  decoration:
+                  InputDecoration(labelText: l.setupLabelSecret),
                   validator: (v) =>
-                  (v == null || v.isEmpty) ? l.setup.validate_required : null,
+                  (v == null || v.isEmpty) ? l.setupValidateRequired : null,
                 ),
+              ],
               const Spacer(),
-              ElevatedButton(
-                onPressed: _submit,
-                child: Text(l.setup.button_continue),
-              )
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  child: Text(l.setupButtonContinue),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    _apiController.dispose();
+    super.dispose();
   }
 }

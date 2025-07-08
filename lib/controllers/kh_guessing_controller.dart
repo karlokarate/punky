@@ -15,9 +15,8 @@
  */
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../l10n/app_localizations.dart';
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
 import '../core/event_bus.dart';
 import '../events/app_events.dart';

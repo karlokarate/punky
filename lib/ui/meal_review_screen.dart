@@ -1,5 +1,5 @@
 /*
- *  meal_review_screen.dart  (v3 – i18n)
+ *  meal_review_screen.dart  (v5 – FINAL + CLEANED)
  *  --------------------------------------------------------------
  *  Bewertungs-Screen nach Analyse: KH-Komponenten, Bolus-Empfehlung,
  *  Interaktion mit AAPS (manuell bestätigt), visuell optimiert.
@@ -10,35 +10,10 @@ import 'dart:async';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
-import '../services/meal_analyzer.dart'
-    show MealReviewComponent, BolusCalculatedEvent;
-import '../events/app_events.dart';
-
-class MealReviewComponent {
-  final String name;
-  final double grams;
-  final double carbsPer100g;
-  final double carbsTotal;
-  final bool isNewlyAdded;
-
-  const MealReviewComponent({
-    required this.name,
-    required this.grams,
-    required this.carbsPer100g,
-    required this.carbsTotal,
-    this.isNewlyAdded = false,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'grams': grams,
-    'carbsPer100g': carbsPer100g,
-    'carbsTotal': carbsTotal,
-    'isNewlyAdded': isNewlyAdded,
-  };
-}
+import '../services/meal_analyzer.dart' show MealReviewComponent;
+import '../events/app_events.dart' show BolusCalculatedEvent, MealAnalyzedEvent;
 
 class MealReviewScreen extends StatefulWidget {
   final EventBus eventBus;
@@ -62,7 +37,9 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
 
     _subAnalysis = widget.eventBus.on<MealAnalyzedEvent>().listen((e) {
       setState(() {
-        _components = e.components;
+        _components = e.components
+            .map((m) => MealReviewComponent.fromJson(m))
+            .toList();
         _totalCarbs = e.totalCarbs;
       });
     });
@@ -83,7 +60,7 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final nf = NumberFormat.decimalPattern();
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -116,8 +93,8 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
               itemBuilder: (context, i) {
                 final c = _components[i];
                 return Card(
-                  shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
                   child: ListTile(
                     leading: Icon(
@@ -126,7 +103,7 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
                     ),
                     title: Text(c.name),
                     subtitle: Text(
-                        '${nf.format(c.grams)} g  •  ${nf.format(c.carbsTotal)} g ${l.mealRevSectionGrams}'),
+                        '${nf.format(c.grams)} g  •  ${nf.format(c.carbsTotal)} g ${l.mealRevSectionGrams}'),
                   ),
                 );
               },
@@ -139,7 +116,7 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
   }
 
   Widget _buildBolusBanner(BolusCalculatedEvent e, BuildContext ctx) {
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(ctx);
     return Material(
       color: e.isSafe ? Colors.teal : Colors.red.shade700,
       child: ListTile(
@@ -162,7 +139,7 @@ class _MealReviewScreenState extends State<MealReviewScreen> {
   }
 
   Future<void> _showBolusDialog(BolusCalculatedEvent e) async {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(

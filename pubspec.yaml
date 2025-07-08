@@ -64,7 +64,7 @@ dependencies:
   string_similarity: ^2.0.0
 
   # Offline-Spracherkennung
-  vosk_flutter: ^0.3.48  # bleibt, aber wir verwenden downgrades unten
+  vosk_flutter: ^0.3.48
 
 dev_dependencies:
   flutter_test:
@@ -72,17 +72,18 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
-  uses-material-design: true
   generate: true
+  uses-material-design: true
+
 
   assets:
     - lib/assets/config/settings_schema.yaml
     - lib/assets/config/portion_units_de.yaml
     - lib/assets/db/products.sqlite
-    - lib/assets/l10n/
     - assets/models/vosk-model-small-de-0.15/
+    - lib/l10n/
 
 dependency_overrides:
   archive: ^4.0.0
   permission_handler: ^12.0.0
-  http: ^0.13.5       # Downgrade, damit zu vosk_flutter passt
+  http: ^0.13.5       # Downgrade für vosk_flutter

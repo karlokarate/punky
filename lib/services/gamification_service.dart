@@ -96,6 +96,6 @@ class GamificationService {
     }
 
     // Unlock‑Check
-    await _avatar.checkUnlocks(_set.childPoints, _set.childLevel);
+    await _avatar.checkUnlocks();
   }
 }

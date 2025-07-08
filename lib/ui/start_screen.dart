@@ -1,18 +1,19 @@
 /*
- *  start_screen.dart  (v1 – PROTOTYP, lokalisiert)
+ *  start_screen.dart  (v2 – lokalisiert, korrigiert)
  *  --------------------------------------------------------------
  *  Auswahl-Screen nach SetupWizard.
+ *  © 2025 Kids Diabetes Companion – GPL-3.0-or-later
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
 class StartScreen extends StatelessWidget {
   const StartScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -25,28 +26,28 @@ class StartScreen extends StatelessWidget {
             children: [
               const Spacer(),
               Text(
-                l.start.title,
+                l.startTitle,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 40),
               ElevatedButton.icon(
                 icon: const Icon(Icons.child_care),
-                label: Text(l.start.child),
+                label: Text(l.startChild),
                 onPressed: () {
                   Navigator.pushNamed(context, '/child');
                 },
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.family_restroom),
-                label: Text(l.start.parent),
+                label: Text(l.startParent),
                 onPressed: () {
                   Navigator.pushNamed(context, '/parent');
                 },
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.settings),
-                label: Text(l.start.settings),
+                label: Text(l.startSettings),
                 onPressed: () {
                   Navigator.pushNamed(context, '/settings');
                 },
@@ -54,7 +55,7 @@ class StartScreen extends StatelessWidget {
               const Spacer(),
               TextButton(
                 onPressed: () => Navigator.pushNamed(context, '/profile_select'),
-                child: Text(l.start.profile),
+                child: Text(l.startProfile),
               ),
             ],
           ),

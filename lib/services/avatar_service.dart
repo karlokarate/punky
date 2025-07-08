@@ -262,7 +262,7 @@ class AvatarService extends ChangeNotifier {
     final order = ['background', 'wing', 'body', 'head', 'accessory', 'weapon'];
     return order
         .map((l) => _selected[l])
-        .where((k) => k != null && itemUnlocked(k!))
+        .where((k) => k != null && itemUnlocked(k))
         .map((k) => _catalog.firstWhere((e) => e.key == k!).assetPath)
         .toList();
   }

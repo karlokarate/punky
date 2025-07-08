@@ -10,9 +10,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/kh_guessing_controller.dart';
-import '../event_bus.dart';
+import '../core/event_bus.dart';
 import '../services/gamification_service.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
 class KhGuessingPage extends StatelessWidget {
   const KhGuessingPage({super.key});
@@ -35,7 +35,7 @@ class _GuessScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = context.watch<KhGuessingController>();
     final nf = NumberFormat.compact(locale: 'de_DE');
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
@@ -108,7 +108,7 @@ class _GuessScaffold extends StatelessWidget {
   void _showResultDialog(BuildContext ctx) {
     final c = KhGuessingController.I;
     final nf = NumberFormat.decimalPattern('de_DE');
-    final l = AppLocalizations.of(ctx)!;
+    final l = AppLocalizations.of(ctx);
     showDialog(
       context: ctx,
       builder: (_) => AlertDialog(
@@ -142,7 +142,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nf = NumberFormat.decimalPattern('de_DE');
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -192,7 +192,7 @@ class _PunkyAvatar extends StatelessWidget {
 class _StreakBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
     return FutureBuilder<int>(
       future: GamificationService.instance.currentStreak,
       builder: (_, snap) {

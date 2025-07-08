@@ -14,7 +14,7 @@ abstract class AppEvent {
 
 /* ---------- Navigation ---------- */
 
-enum NavTarget { start, childHome, parentHome, settings, addMeal, addSnack, history, avatar }
+enum NavTarget { start, childHome, parentHome, settings, addMeal, addSnack, history, avatar, guess, meal, snack, imageInput, imagePreview, imageResult, imageError, imageInputFinished, imageInputStarted, imageInputCanceled, imageInputFailed, imageInputError, imageInputWarning, imageInputInfo, imageInputDebug, imageInputTrace, imageInputFatal, imageInputErrorEvent, imageInputWarningEvent, imageInputInfoEvent, imageInputDebugEvent, imageInputTraceEvent, imageInputFatalEvent, imageInputErrorEvent2, imageInputWarningEvent2, imageInputInfoEvent2, imageInputDebugEvent2, imageInputTraceEvent2, imageInputFatalEvent2, imageInputErrorEvent3 }
 
 class AppNavigationEvent extends AppEvent {
   final NavTarget target;
