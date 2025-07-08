@@ -18,6 +18,8 @@ import '../services/gamification_service.dart';
 import '../services/gpt_service.dart';
 import '../services/image_input_service.dart';
 import '../services/speech_service.dart';
+import '../services/aaps_carb_sync_service.dart';
+import '../services/meal_analyzer.dart';
 
 enum AppFlavor { standalone, plugin }
 
@@ -61,6 +63,8 @@ class AppInitializer {
     await GamificationService.instance.init();
     await GptService.I.init(bus.bus);
     await ImageInputService.instance.init(bus.bus);
+    await AapsCarbSyncService.init(flavor);
+    await MealAnalyzer.init(db);
     await SpeechService.instance.init(bus.bus);
 
     return AppContext(

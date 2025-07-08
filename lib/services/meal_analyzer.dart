@@ -57,11 +57,17 @@ class MealReviewComponent {
 }
 
 class MealAnalyzer {
-  MealAnalyzer({required Database db})
+  MealAnalyzer._(Database db)
       : _matcher = ProductMatcher(db),
         _bus = AppEventBus.I.bus,
         _settings = SettingsService.I,
         _sync = AapsCarbSyncService.I;
+
+  static late MealAnalyzer I;
+
+  static Future<void> init(Database db) async {
+    I = MealAnalyzer._(db);
+  }
 
   final ProductMatcher _matcher;
   final EventBus _bus;

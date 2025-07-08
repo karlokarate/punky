@@ -21,6 +21,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../events/app_events.dart';
 import '../services/text_parser.dart';
 import 'settings_service.dart';
+import 'meal_analyzer.dart';
 
 class SpeechInputStartedEvent {}
 class SpeechInputFinishedEvent {
@@ -103,7 +104,7 @@ class SpeechService {
       if (rsp.statusCode != 200) return false;
 
       final txt = jsonDecode(rsp.body)['text'] as String;
-      _handleTranscript(txt);
+      await _handleTranscript(txt);
       return true;
     } catch (_) {
       return false;
@@ -131,7 +132,7 @@ class SpeechService {
         if (result.isEmpty) {
           _fail('empty');
         } else {
-          _handleTranscript(result);
+          await _handleTranscript(result);
         }
       } else if (_iosFallback != null) {
         await _iosFallback!.initialize();
@@ -141,7 +142,7 @@ class SpeechService {
           listenFor: const Duration(seconds: 5),
         );
         await Future.delayed(const Duration(seconds: 6));
-        _handleTranscript(text);
+        await _handleTranscript(text);
       } else {
         _fail('offline_engine_missing');
       }
@@ -160,7 +161,7 @@ class SpeechService {
     }
   }
 
-  void _handleTranscript(String txt) {
+  Future<void> _handleTranscript(String txt) async {
     _bus
       ..fire(SpeechInputFinishedEvent(txt))
       ..fire(AvatarCelebrateEvent());
@@ -169,6 +170,7 @@ class SpeechService {
     if (parsed.isEmpty) {
       _fail('no_keywords_detected');
     }
+    await MealAnalyzer.I.analyze(txt);
   }
 
   Future<void> _onPluginCall(MethodCall call) async {
