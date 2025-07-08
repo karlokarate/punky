@@ -1,12 +1,10 @@
 /*
- *  nightscout_service.dart (v4 – MERGED)
+ *  nightscout_service.dart (v5 – Profile‑Patch + Ø‑Support)
  *  --------------------------------------------------------------------------
- *  • Vereint die Funktionsvielfalt des bisherigen „v3 – FINAL“ (Standalone /
- *    Plugin‑Bridge, Upload‑Routinen, AAPS‑Channel) mit den Live‑Cache‑,
- *    Polling‑ und Provider‑Features des neuen Parent‑Screens (Trend‑Cache,
- *    ChangeNotifier, EventBus‑Log, Bolus‑Freigabe).
- *  • Bewahrt 100 % Rückwärtskompatibilität: alle älteren Aufrufe bleiben
- *    unverändert nutzbar, zusätzliche Reaktivität wird on‑top bereitgestellt.
+ *  • Baut auf v4 – MERGED auf und ergänzt:
+ *      1️⃣ uploadProfilePatch(Map)   → One‑Click‑Übernahme aus Parent‑Screen
+ *      2️⃣ getAverage(DateTime from, DateTime to)  → optional Ø‑Abfrage (API)
+ *  • Sonstiger Bestand unverändert: Polling, Cache, Bolus‑Freigabe, Event‑Log.
  *
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
@@ -31,7 +29,7 @@ extension GlucoseTrendArrow on GlucoseEntry {
   String get trendArrow {
     const map = {
       0: '⇼', // none
-      1: '↓', // double down
+      1: '↓↓',
       2: '↘',
       3: '→',
       4: '↗',
@@ -46,41 +44,40 @@ extension GlucoseTrendArrow on GlucoseEntry {
 }
 
 /// ---------------------------------------------------------------------------
-/// Nightscout‑Service (Singleton + ChangeNotifier + Event‑Log)
+/// Nightscout‑Service (Singleton + ChangeNotifier + Event‑Log)
 /// ---------------------------------------------------------------------------
 class NightscoutService extends ChangeNotifier {
-  // ---------------------- Singleton & Factory --------------------------------
+  /* ---------------------- Singleton / Factory ---------------------------- */
   NightscoutService._();
   static final NightscoutService instance = NightscoutService._();
 
-  /// Erlaubt die gewohnte Provider‑Syntax:
-  /// `ChangeNotifierProvider(create: (_) => NightscoutService(settings))`
+  /// Provider‑kompatibler ctor
   factory NightscoutService(SettingsService settings) {
     instance._init(settings);
     return instance;
   }
 
-  // ---------------------- generelle Konfiguration ----------------------------
+  /* ---------------------- Konfiguration ---------------------------------- */
   late final SettingsService _settings;
   late final AppFlavor _flavor; // Standalone ↔︎ Plugin
   static const MethodChannel _nsBridge =
-  MethodChannel('kidsapp/ns_bridge');
+      MethodChannel('kidsapp/ns_bridge');
 
-  // ---------------------- Live‑Cache / State ---------------------------------
+  /* ---------------------- Live‑Cache / State ----------------------------- */
   GlucoseEntry? currentEntry;
   List<GlucoseEntry> cachedEntries = <GlucoseEntry>[];
   final List<ParentLogEvent> parentLog = [];
 
   Timer? _pollTimer;
 
-  // ---------------------- Initialisierung ------------------------------------
+  /* ---------------------- Initialisierung -------------------------------- */
   Future<void> _init(SettingsService settings) async {
-    if (_pollTimer != null) return; // bereits initialisiert
+    if (_pollTimer != null) return; // bereits init
     _settings = settings;
-    _flavor = const String.fromEnvironment(
-      'INTEGRATION_MODE',
-      defaultValue: 'sa',
-    ).toLowerCase().startsWith('p')
+    _flavor = const String.fromEnvironment('INTEGRATION_MODE',
+            defaultValue: 'sa')
+        .toLowerCase()
+        .startsWith('p')
         ? AppFlavor.plugin
         : AppFlavor.standalone;
 
@@ -89,48 +86,46 @@ class NightscoutService extends ChangeNotifier {
 
   bool get isPlugin => _flavor == AppFlavor.plugin;
 
-  // ---------------------- Öffentliche API (Bestand) --------------------------
+  /* ==================== Öffentliche API (Bestand) ======================== */
   Future<List<GlucoseEntry>> fetchGlucose({int count = 12}) async {
     if (isPlugin) {
       final List<dynamic> list =
-      await _nsBridge.invokeMethod('getEntries', {'count': count});
+          await _nsBridge.invokeMethod('getEntries', {'count': count});
       return list
           .map((e) => GlucoseEntry.fromJson(Map<String, dynamic>.from(e)))
           .toList();
-    } else {
-      final uri = Uri.parse(
-          '${_baseUrl()}/api/v1/entries.json?count=$count&find[device]=Dexcom');
-      final resp = await http.get(uri, headers: _headers());
-      if (resp.statusCode != 200) {
-        throw Exception('Nightscout ${resp.statusCode}');
-      }
-      final list = jsonDecode(resp.body);
-      return list
-          .map<GlucoseEntry>(
-              (e) => GlucoseEntry.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
     }
+    final uri = Uri.parse(
+        '${_baseUrl()}/api/v1/entries.json?count=$count&find[device]=Dexcom');
+    final resp = await http.get(uri, headers: _headers());
+    if (resp.statusCode != 200) {
+      throw Exception('Nightscout ${resp.statusCode}');
+    }
+    final list = jsonDecode(resp.body);
+    return list
+        .map<GlucoseEntry>(
+            (e) => GlucoseEntry.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   Future<List<Treatment>> fetchTreatments({int count = 10}) async {
     if (isPlugin) {
       final List<dynamic> list =
-      await _nsBridge.invokeMethod('getTreatments', {'count': count});
+          await _nsBridge.invokeMethod('getTreatments', {'count': count});
       return list
           .map((e) => Treatment.fromJson(Map<String, dynamic>.from(e)))
           .toList();
-    } else {
-      final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json?count=$count');
-      final resp = await http.get(uri, headers: _headers());
-      if (resp.statusCode != 200) {
-        throw Exception('Nightscout ${resp.statusCode}');
-      }
-      final list = jsonDecode(resp.body);
-      return list
-          .map<Treatment>(
-              (e) => Treatment.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
     }
+    final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json?count=$count');
+    final resp = await http.get(uri, headers: _headers());
+    if (resp.statusCode != 200) {
+      throw Exception('Nightscout ${resp.statusCode}');
+    }
+    final list = jsonDecode(resp.body);
+    return list
+        .map<Treatment>(
+            (e) => Treatment.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   Future<DeviceStatus?> fetchDeviceStatus() async {
@@ -139,15 +134,13 @@ class NightscoutService extends ChangeNotifier {
       return map != null
           ? DeviceStatus.fromJson(Map<String, dynamic>.from(map))
           : null;
-    } else {
-      final uri =
-      Uri.parse('${_baseUrl()}/api/v1/devicestatus.json?count=1');
-      final resp = await http.get(uri, headers: _headers());
-      if (resp.statusCode != 200) return null;
-      final List list = jsonDecode(resp.body);
-      if (list.isEmpty) return null;
-      return DeviceStatus.fromJson(Map<String, dynamic>.from(list.first));
     }
+    final uri = Uri.parse('${_baseUrl()}/api/v1/devicestatus.json?count=1');
+    final resp = await http.get(uri, headers: _headers());
+    if (resp.statusCode != 200) return null;
+    final List list = jsonDecode(resp.body);
+    if (list.isEmpty) return null;
+    return DeviceStatus.fromJson(Map<String, dynamic>.from(list.first));
   }
 
   Future<DeviceStatus?> fetchLoopStatus() => fetchDeviceStatus();
@@ -155,33 +148,66 @@ class NightscoutService extends ChangeNotifier {
   Future<void> uploadTreatment(Map<String, dynamic> payload) async {
     if (isPlugin) {
       await _nsBridge.invokeMethod('uploadTreatment', payload);
-    } else {
-      final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json');
-      final resp = await http.post(
-        uri,
-        headers: _headers(contentType: true),
-        body: jsonEncode(payload),
-      );
-      if (resp.statusCode >= 400) {
-        throw Exception(
-            'Upload failed: ${resp.statusCode} ${resp.body}');
-      }
+      return;
+    }
+    final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json');
+    final resp = await http.post(
+      uri,
+      headers: _headers(contentType: true),
+      body: jsonEncode(payload),
+    );
+    if (resp.statusCode >= 400) {
+      throw Exception('Upload failed: ${resp.statusCode} ${resp.body}');
     }
   }
 
-  // ---------------------- Öffentliche API (NEU) ------------------------------
-  /// Manuelles Refresh (Glukose + Treatments) und Notifikation.
-  Future<void> refresh() async {
-    await Future.wait([_updateGlucose(), _updateTreatments()]);
+  /* ==================== Öffentliche API (NEU) ============================ */
+
+  /// ⬆  1️⃣  Profil‑Patch (One‑Click aus Parent‑Screen)
+  Future<bool> uploadProfilePatch(Map<String, dynamic> patch) async {
+    if (patch.isEmpty || _settings.nightscoutUrl.isEmpty) return false;
+
+    if (isPlugin) {
+      final ok =
+          await _nsBridge.invokeMethod('uploadProfilePatch', patch) ?? false;
+      if (ok) _log('Profil‑Patch (Plugin) hochgeladen');
+      return ok;
+    }
+
+    final uri = Uri.parse('${_baseUrl()}/api/v1/profile');
+    final resp = await http.post(
+      uri,
+      headers: _headers(contentType: true),
+      body: jsonEncode(patch),
+    );
+    final ok = resp.statusCode == 200;
+    if (ok) {
+      _log('Profil‑Patch hochgeladen');
+    }
+    return ok;
   }
 
-  /// Liefert letzten `limit`‑SGV‑Einträge (Cache wird aktualisiert).
+  ///  2️⃣ Durchschnitt berechnen (optional; wird im Parent‑Screen direkt berechnet,
+  ///     hier als Service‑API falls von anderen Widgets benötigt).
+  double? getAverage(DateTime from, DateTime to) {
+    final sub = cachedEntries.where((e) =>
+        !e.date.isBefore(from) && !e.date.isAfter(to) && e.sgv != null);
+    if (sub.isEmpty) return null;
+    final sum = sub.fold<int>(0, (acc, e) => acc + e.sgv!.round());
+    return sum / sub.length;
+  }
+
+  /// Manuelles Refresh (Glukose + Treatments).
+  Future<void> refresh() async =>
+      await Future.wait([_updateGlucose(), _updateTreatments()]);
+
+  /// Letzte `limit` SGV‑Einträge
   Future<List<GlucoseEntry>> getRecentEntries({int limit = 96}) async {
     await _updateGlucose(limit: limit);
     return cachedEntries;
   }
 
-  /// Autorisiert den letzten angeforderten Bolus (falls vorhanden).
+  /// Bolus‑Freigabe
   Future<bool> authorizePendingBolus() async {
     if (isPlugin) {
       final bool ok =
@@ -191,11 +217,10 @@ class NightscoutService extends ChangeNotifier {
     }
 
     if (_settings.nightscoutUrl.isEmpty) return false;
-    final uri =
-    Uri.parse('${_baseUrl()}/api/v1/treatments'); // Beispiel‑Endpoint
+    final uri = Uri.parse('${_baseUrl()}/api/v1/treatments');
     final resp = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers(contentType: true),
       body: jsonEncode({'action': 'approve-last-bolus'}),
     );
     final ok = resp.statusCode == 200;
@@ -203,24 +228,21 @@ class NightscoutService extends ChangeNotifier {
     return ok;
   }
 
-  // ---------------------- Polling / Cache‑Updates ---------------------------
+  /* ==================== Polling / Cache‑Updates ========================= */
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer =
         Timer.periodic(const Duration(minutes: 1), (_) => refresh());
-    unawaited(refresh()); // sofort ­(ignore lint)
+    unawaited(refresh());
   }
 
   Future<void> _updateGlucose({int limit = 96}) async {
     try {
       final entries = await fetchGlucose(count: limit);
-      // Chronologisch sortieren (ältest → neu)
-      cachedEntries = entries.reversed.toList();
-      currentEntry = cachedEntries.isNotEmpty ? cachedEntries.last : null;
+      cachedEntries = entries.reversed.toList(); // alt → neu
+      currentEntry  = cachedEntries.isNotEmpty ? cachedEntries.last : null;
       notifyListeners();
-    } catch (_) {
-      // leise ignorieren
-    }
+    } catch (_) {/* ignore */}
   }
 
   Future<void> _updateTreatments() async {
@@ -228,25 +250,20 @@ class NightscoutService extends ChangeNotifier {
       final list = await fetchTreatments(count: 50);
       parentLog
         ..clear()
-        ..addAll(list
-            .map((t) => ParentLogEvent.fromTreatment(t.toJson()))); // toJson() vorhanden
+        ..addAll(list.map(
+            (t) => ParentLogEvent.fromTreatment(t.toJson()))); // toJson vorhanden
       notifyListeners();
-    } catch (_) {
-      // leise ignorieren
-    }
+    } catch (_) {/* ignore */}
   }
 
   void _log(String msg) {
-    final evt = ParentLogEvent(
-      message: msg,
-      timestamp: DateTime.now(),
-    );
+    final evt = ParentLogEvent(message: msg, timestamp: DateTime.now());
     parentLog.add(evt);
     eventBus.fire(evt);
     notifyListeners();
   }
 
-  // ---------------------- Helper --------------------------------------------
+  /* ==================== Helper ========================================== */
   String _baseUrl() =>
       _settings.nightscoutUrl.trim().replaceAll(RegExp(r'/$'), '');
 
@@ -258,7 +275,7 @@ class NightscoutService extends ChangeNotifier {
     return h;
   }
 
-  // ---------------------- Lebenszyklus --------------------------------------
+  /* ==================== Lifecycle ======================================= */
   @override
   void dispose() {
     _pollTimer?.cancel();
