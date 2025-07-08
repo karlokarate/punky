@@ -1,20 +1,65 @@
 /*
- *  app_events.dart  (v6 – FINAL with Sync Events)
- *  --------------------------------------------------------------
- *  Alle Event​-Klassen, JSON​-serialisierbar für AAPS​-Bridge.
+ *  app_events.dart  (v7 – MERGED FINAL)
+ *  --------------------------------------------------------------------------
+ *  • Vereint alle bisherigen App‑/Sync‑Event‑Klassen (v6) mit den neuen
+ *    Parent‑/GPT‑Events, die der Nightscout‑Service und der Parent‑Screen
+ *    verwenden.
+ *  • Jede Klasse erbt von [AppEvent] und implementiert [toJson()], damit sie
+ *    weiterhin über die AAPS‑Bridge serialisierbar ist.
  *
- *  Jede Klasse erbt von [AppEvent] und implementiert [toJson()].
- *
- *  © 2025 Kids Diabetes Companion – GPL​-3.0​-or​later
+ *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
+/* ------------------------------------------------------------------------- */
+/*  Basis ‑ Root Event                                                       */
+/* ------------------------------------------------------------------------- */
 abstract class AppEvent {
   Map<String, dynamic> toJson();
 }
 
-/* ---------- Navigation ---------- */
-
-enum NavTarget { start, childHome, parentHome, settings, addMeal, addSnack, history, avatar, guess, meal, snack, imageInput, imagePreview, imageResult, imageError, imageInputFinished, imageInputStarted, imageInputCanceled, imageInputFailed, imageInputError, imageInputWarning, imageInputInfo, imageInputDebug, imageInputTrace, imageInputFatal, imageInputErrorEvent, imageInputWarningEvent, imageInputInfoEvent, imageInputDebugEvent, imageInputTraceEvent, imageInputFatalEvent, imageInputErrorEvent2, imageInputWarningEvent2, imageInputInfoEvent2, imageInputDebugEvent2, imageInputTraceEvent2, imageInputFatalEvent2, imageInputErrorEvent3 }
+/* ------------------------------------------------------------------------- */
+/*  Navigation Events                                                        */
+/* ------------------------------------------------------------------------- */
+enum NavTarget {
+  start,
+  childHome,
+  parentHome,
+  settings,
+  addMeal,
+  addSnack,
+  history,
+  avatar,
+  guess,
+  meal,
+  snack,
+  imageInput,
+  imagePreview,
+  imageResult,
+  imageError,
+  imageInputFinished,
+  imageInputStarted,
+  imageInputCanceled,
+  imageInputFailed,
+  imageInputError,
+  imageInputWarning,
+  imageInputInfo,
+  imageInputDebug,
+  imageInputTrace,
+  imageInputFatal,
+  imageInputErrorEvent,
+  imageInputWarningEvent,
+  imageInputInfoEvent,
+  imageInputDebugEvent,
+  imageInputTraceEvent,
+  imageInputFatalEvent,
+  imageInputErrorEvent2,
+  imageInputWarningEvent2,
+  imageInputInfoEvent2,
+  imageInputDebugEvent2,
+  imageInputTraceEvent2,
+  imageInputFatalEvent2,
+  imageInputErrorEvent3
+}
 
 class AppNavigationEvent extends AppEvent {
   final NavTarget target;
@@ -23,17 +68,16 @@ class AppNavigationEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'target': target.name};
 }
 
-/* ---------- Meal / Analyzer ---------- */
-
+/* ------------------------------------------------------------------------- */
+/*  Meal / Analyzer Events                                                   */
+/* ------------------------------------------------------------------------- */
 class MealAnalyzedEvent extends AppEvent {
   final double totalCarbs;
   final List<Map<String, dynamic>> components;
   MealAnalyzedEvent({required this.totalCarbs, required this.components});
   @override
-  Map<String, dynamic> toJson() => {
-    'totalCarbs': totalCarbs,
-    'components': components,
-  };
+  Map<String, dynamic> toJson() =>
+      {'totalCarbs': totalCarbs, 'components': components};
 }
 
 class MealWarningEvent extends AppEvent {
@@ -43,8 +87,9 @@ class MealWarningEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'warnings': warnings};
 }
 
-/* ---------- Image Input ---------- */
-
+/* ------------------------------------------------------------------------- */
+/*  Image Input Events                                                       */
+/* ------------------------------------------------------------------------- */
 class ImageInputStartedEvent extends AppEvent {
   @override
   Map<String, dynamic> toJson() => {};
@@ -64,8 +109,9 @@ class ImageInputFailedEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'reason': reason};
 }
 
-/* ---------- Speech Input ---------- */
-
+/* ------------------------------------------------------------------------- */
+/*  Speech Input Events                                                      */
+/* ------------------------------------------------------------------------- */
 class SpeechInputStartedEvent extends AppEvent {
   @override
   Map<String, dynamic> toJson() => {};
@@ -85,8 +131,9 @@ class SpeechInputFailedEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'reason': reason};
 }
 
-/* ---------- Gamification ---------- */
-
+/* ------------------------------------------------------------------------- */
+/*  Gamification Events                                                      */
+/* ------------------------------------------------------------------------- */
 class PointsChangedEvent extends AppEvent {
   final int newPoints;
   PointsChangedEvent(this.newPoints);
@@ -101,8 +148,9 @@ class LevelUpEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'level': newLevel};
 }
 
-/* ---------- Bolus ---------- */
-
+/* ------------------------------------------------------------------------- */
+/*  Bolus Events (Analysed + Authorization)                                  */
+/* ------------------------------------------------------------------------- */
 class BolusCalculatedEvent extends AppEvent {
   final double carbs;
   final double units;
@@ -111,7 +159,6 @@ class BolusCalculatedEvent extends AppEvent {
   final double insulin;
   final double ratio;
   final String source;
-
   BolusCalculatedEvent({
     required this.carbs,
     required this.units,
@@ -121,7 +168,6 @@ class BolusCalculatedEvent extends AppEvent {
     required this.ratio,
     required this.source,
   });
-
   @override
   Map<String, dynamic> toJson() => {
     'carbs': carbs,
@@ -134,8 +180,17 @@ class BolusCalculatedEvent extends AppEvent {
   };
 }
 
-/* ---------- Sync Events ---------- */
+/// Eltern‑Freigabe eines Bolus‑Vorschlags (genutzt vom Nightscout‑Service)
+class BolusAuthorizationEvent extends AppEvent {
+  final double units;
+  BolusAuthorizationEvent(this.units);
+  @override
+  Map<String, dynamic> toJson() => {'units': units};
+}
 
+/* ------------------------------------------------------------------------- */
+/*  Sync / Settings Events                                                   */
+/* ------------------------------------------------------------------------- */
 class SettingsChangedEvent extends AppEvent {
   final String key;
   final dynamic value;
@@ -149,10 +204,8 @@ class SnackLoggedEvent extends AppEvent {
   final DateTime time;
   SnackLoggedEvent({required this.carbs, required this.time});
   @override
-  Map<String, dynamic> toJson() => {
-    'carbs': carbs,
-    'time': time.toIso8601String(),
-  };
+  Map<String, dynamic> toJson() =>
+      {'carbs': carbs, 'time': time.toIso8601String()};
 }
 
 class ParentApprovalEvent extends AppEvent {
@@ -160,22 +213,20 @@ class ParentApprovalEvent extends AppEvent {
   final bool approved;
   ParentApprovalEvent({required this.action, required this.approved});
   @override
-  Map<String, dynamic> toJson() => {
-    'action': action,
-    'approved': approved,
-  };
+  Map<String, dynamic> toJson() =>
+      {'action': action, 'approved': approved};
 }
 
 class NewMealDetectedEvent extends AppEvent {
   final String source;
-
   NewMealDetectedEvent({required this.source});
-
   @override
   Map<String, dynamic> toJson() => {'source': source};
 }
-/* ---------- Avatar ---------- */
 
+/* ------------------------------------------------------------------------- */
+/*  Avatar Events                                                            */
+/* ------------------------------------------------------------------------- */
 abstract class AvatarEvent extends AppEvent {}
 
 class AvatarCelebrateEvent extends AvatarEvent {
@@ -195,8 +246,42 @@ class AvatarItemPreviewEvent extends AvatarEvent {
   Map<String, dynamic> toJson() => {'itemKey': itemKey};
 }
 
-/* ---------- Fallback für unbekannte Native​-Events ---------- */
+/* ------------------------------------------------------------------------- */
+/*  Parent / Log Events (NEU)                                                */
+/* ------------------------------------------------------------------------- */
+class ParentLogEvent extends AppEvent {
+  final String message;
+  final DateTime timestamp;
+  ParentLogEvent({required this.message, required this.timestamp});
 
+  factory ParentLogEvent.fromTreatment(Map<String, dynamic> t) {
+    final ts = DateTime.parse(t['created_at'] as String);
+    final msg = t['eventType'] == 'Carb Correction'
+        ? 'KH ${t['carbs']} g eingegeben'
+        : t['eventType'] == 'Bolus'
+        ? 'Bolus ${t['insulin']} U'
+        : t['eventType'];
+    return ParentLogEvent(message: msg, timestamp: ts);
+  }
+
+  @override
+  Map<String, dynamic> toJson() =>
+      {'message': message, 'timestamp': timestamp.toIso8601String()};
+}
+
+/* ------------------------------------------------------------------------- */
+/*  GPT Recommendation Event (NEU)                                           */
+/* ------------------------------------------------------------------------- */
+class GPTRecommendationEvent extends AppEvent {
+  final dynamic result; // z. B. GPTAnalysisResult
+  GPTRecommendationEvent(this.result);
+  @override
+  Map<String, dynamic> toJson() => {'result': result};
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Fallback für unbekannte Native‑Events                                    */
+/* ------------------------------------------------------------------------- */
 class GenericAapsEvent extends AppEvent {
   final String nativeType;
   final Map<String, dynamic> payload;
@@ -205,16 +290,19 @@ class GenericAapsEvent extends AppEvent {
   Map<String, dynamic> toJson() => payload;
 }
 
-/* ---------- Factory ---------- */
-
+/* ------------------------------------------------------------------------- */
+/*  Factory‑Helper – wandelt Native ↔︎ Dart‑Events                           */
+/* ------------------------------------------------------------------------- */
 class AppEventFactory {
   static AppEvent fromNative(String type, Map<String, dynamic> p) {
     switch (type) {
       case 'MealAnalyzedEvent':
         return MealAnalyzedEvent(
-            totalCarbs: (p['totalCarbs'] as num).toDouble(),
-            components:
-            (p['components'] as List).cast<Map<String, dynamic>>());
+          totalCarbs: (p['totalCarbs'] as num).toDouble(),
+          components:
+          (p['components'] as List).cast<Map<String, dynamic>>(),
+        );
+
       case 'BolusCalculatedEvent':
         return BolusCalculatedEvent(
           carbs: (p['carbs'] as num).toDouble(),
@@ -225,6 +313,21 @@ class AppEventFactory {
           ratio: (p['ratio'] as num).toDouble(),
           source: p['source'] ?? '',
         );
+
+      case 'ParentLogEvent':
+        return ParentLogEvent(
+          message: p['message'] ?? '',
+          timestamp: DateTime.parse(p['timestamp']),
+        );
+
+      case 'BolusAuthorizationEvent':
+        return BolusAuthorizationEvent(
+          (p['units'] as num).toDouble(),
+        );
+
+      case 'GPTRecommendationEvent':
+        return GPTRecommendationEvent(p['result']);
+
       default:
         return GenericAapsEvent(type, p);
     }
