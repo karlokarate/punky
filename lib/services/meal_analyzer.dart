@@ -1,21 +1,19 @@
 /*
- *  meal_analyzer.dart  (v7 – korrigiert FINAL)
- *  --------------------------------------------------------------
- *  • Parsed Text → FoodItems → ProductMatch → KH ‑Summe
- *  • Berücksichtigt Portionen (servingQuantity) **korrekt**
- *  • Plausibilitäts​‑Check ±15 %, konfigurierbare Warn­schwelle
- *  • Ergebnis​‑Events  MealAnalyzedEvent, MealWarningEvent
- *  • AAPS​‑/Nightscout​‑Sync via AapsCarbSyncService
- *  • Liefert BolusCalculatedEvent mit Empfehlung (optional)
+ * meal_analyzer.dart (v7 – korrigiert FINAL)
+ * --------------------------------------------------------------
+ * • Parsed Text → FoodItems → ProductMatch → KH ‑Summe
+ * • Berücksichtigt Portionen (servingQuantity) **korrekt**
+ * • Plausibilitäts‑Check ±15 %, konfigurierbare Warnschwelle
+ * • Ergebnis‑Events MealAnalyzedEvent, MealWarningEvent
+ * • AAPS‑/Nightscout‑Sync via AapsCarbSyncService
+ * • Liefert BolusCalculatedEvent mit Empfehlung (optional)
  *
- *  Projektpfad: lib/services/meal_analyzer.dart
+ * Projektpfad: lib/services/meal_analyzer.dart
  */
 
 import 'dart:ui';
-
 import 'package:event_bus/event_bus.dart';
 import 'package:sqflite/sqflite.dart';
-
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/settings_service.dart';
@@ -39,7 +37,7 @@ class MealReviewComponent {
     this.isNewlyAdded = false,
   });
 
-  Map<String, dynamic> toJson() => {
+  Map toJson() => {
     'name': name,
     'grams': grams,
     'carbsPer100g': carbsPer100g,
@@ -60,25 +58,23 @@ class MealAnalyzer {
   final SettingsService _settings;
   final AapsCarbSyncService _sync;
 
-  Future<void> analyze(String input) async {
+  Future analyze(String input) async {
     final loc = lookupAppLocalizations(const Locale('en'));
     await TextParser.loadUnitsFromYaml('assets/config/units.yaml');
-    final parsedItems = TextParser.parse(input);
 
-    final List<MealReviewComponent> results = [];
+    final parsedItems = TextParser.parse(input);
+    final List results = [];
     double totalCarbs = 0.0;
     bool fuzzyHitOccurred = false;
 
     for (final parsed in parsedItems) {
       final item = FoodItem(rawName: parsed.term, amount: parsed.amount);
       final matchResult = await _matcher.findMatches(item);
-
       if (matchResult.fuzzyHit) fuzzyHitOccurred = true;
 
       for (final match in matchResult.matches) {
         final carbs = _calcCarbs(item, match);
         if (carbs == null) continue;
-
         totalCarbs += carbs;
         results.add(MealReviewComponent(
           name: match.name,
@@ -92,11 +88,14 @@ class MealAnalyzer {
 
     _bus.fire(MealAnalyzedEvent(
       totalCarbs: totalCarbs,
-      components: results.map((e) => e.toJson()).toList(),
+      components: List<Map<String, dynamic>>.from(results.map((e) => e.toJson())),
+
+
     ));
 
     _processWarnings(totalCarbs, fuzzyHitOccurred, loc);
-    await _sync.persistMeal(totalCarbs, results.map((e) => e.toJson()).toList());
+    await _sync.persistMeal(
+        totalCarbs, List<Map<String,dynamic>>.from(results.map((e) => e.toJson())));
 
     if (_settings.insulinRatio > 0) {
       final units = _round(totalCarbs / _settings.insulinRatio);
@@ -108,6 +107,9 @@ class MealAnalyzer {
           _settings.insulinRatio.toString(),
         ),
         isSafe: units < 10,
+        insulin: units,
+        ratio: _settings.insulinRatio,
+        source: 'analyzer',
       ));
     }
   }
@@ -125,18 +127,18 @@ class MealAnalyzer {
     return carbs != null ? _round(carbs) : null;
   }
 
-  void _processWarnings(double totalCarbs, bool fuzzy, AppLocalizations loc) {
+  void _processWarnings(
+      double totalCarbs, bool fuzzy, AppLocalizations loc) {
     final warnThreshold = _settings.carbWarnThreshold;
-    final List<String> warns = [];
-
+    final List warns = [];
     if (totalCarbs >= warnThreshold) {
       warns.add(loc.carbAnalysisWarnHigh(_round(totalCarbs).toString()));
     }
     if (fuzzy) warns.add(loc.carbAnalysisWarnFuzzy);
     if (totalCarbs > 250) warns.add(loc.carbAnalysisWarnExcessive);
-
     if (warns.isNotEmpty) {
-      _bus.fire(MealWarningEvent(warnings: warns));
+      _bus.fire(MealWarningEvent(warnings: List<String>.from(warns)));
+
     }
   }
 
