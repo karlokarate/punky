@@ -119,13 +119,8 @@ class CommunicationService {
     if (SettingsService.I.enablePush != true) return;
 
     try {
-      await PushService.instance.send(
-        title: title,
-        body: body,
-        data: payload,
-        topic: target,
-        tokens: tokens,
-      );
+      await PushService.instance
+          .send(PushMessage(title: title, body: body, data: payload));
     } catch (_) {
       // offline → in Queue ablegen
       await enqueue({'title': title, 'body': body, 'payload': payload, 'topic': target, 'tokens': tokens});

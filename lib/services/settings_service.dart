@@ -18,7 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/app_initializer.dart';
-import '../models/app_events.dart';
+import '../events/app_events.dart';
 import '../event_bus.dart';
 
 /* ------------------------------------------------------------------------- */

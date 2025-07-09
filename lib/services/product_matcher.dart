@@ -15,7 +15,6 @@
  *  © 2025 Kids Diabetes Companion – GPL​-3.0​-or​later
  */
 
-import 'dart:collection';
 import 'package:event_bus/event_bus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:string_similarity/string_similarity.dart';
