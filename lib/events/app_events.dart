@@ -1,25 +1,20 @@
 /*
- *  app_events.dart  (v7 – MERGED FINAL)
+ *  app_events.dart  (v9 – COMPLETE)
  *  --------------------------------------------------------------------------
- *  • Vereint alle bisherigen App‑/Sync‑Event‑Klassen (v6) mit den neuen
- *    Parent‑/GPT‑Events, die der Nightscout‑Service und der Parent‑Screen
- *    verwenden.
- *  • Jede Klasse erbt von [AppEvent] und implementiert [toJson()], damit sie
- *    weiterhin über die AAPS‑Bridge serialisierbar ist.
+ *  • Enthält **ALLE** bisher dokumentierten Events + AvatarSpeakEvent +
+ *    GptResponseReceived + NightscoutAnalysisAvailableEvent.
+ *  • Jeder Event implementiert [AppEvent] → Serialisierung kompatibel.
+ *  • Factory [AppEventFactory] mappt Native‑Typen auf Dart‑Klassen.
  *
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
-/* ------------------------------------------------------------------------- */
-/*  Basis ‑ Root Event                                                       */
-/* ------------------------------------------------------------------------- */
 abstract class AppEvent {
   Map<String, dynamic> toJson();
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Navigation Events                                                        */
-/* ------------------------------------------------------------------------- */
+/* ───────────────────── Navigation ───────────────────── */
+
 enum NavTarget {
   start,
   childHome,
@@ -58,7 +53,7 @@ enum NavTarget {
   imageInputDebugEvent2,
   imageInputTraceEvent2,
   imageInputFatalEvent2,
-  imageInputErrorEvent3
+  imageInputErrorEvent3,
 }
 
 class AppNavigationEvent extends AppEvent {
@@ -68,9 +63,8 @@ class AppNavigationEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'target': target.name};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Meal / Analyzer Events                                                   */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Meal / Analyzer ─────────────────── */
+
 class MealAnalyzedEvent extends AppEvent {
   final double totalCarbs;
   final List<Map<String, dynamic>> components;
@@ -87,16 +81,15 @@ class MealWarningEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'warnings': warnings};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Image Input Events                                                       */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Image‑Input ­────────────────────── */
+
 class ImageInputStartedEvent extends AppEvent {
   @override
   Map<String, dynamic> toJson() => {};
 }
 
 class ImageInputFinishedEvent extends AppEvent {
-  final List<Map<String, dynamic>> items;
+  final List<Map<String, dynamic>> items; // ParsedFoodItem.toJson()
   ImageInputFinishedEvent(this.items);
   @override
   Map<String, dynamic> toJson() => {'items': items};
@@ -109,9 +102,8 @@ class ImageInputFailedEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'reason': reason};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Speech Input Events                                                      */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Speech‑Input ────────────────────── */
+
 class SpeechInputStartedEvent extends AppEvent {
   @override
   Map<String, dynamic> toJson() => {};
@@ -131,9 +123,8 @@ class SpeechInputFailedEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'reason': reason};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Gamification Events                                                      */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Gamification ───────────────────── */
+
 class PointsChangedEvent extends AppEvent {
   final int newPoints;
   PointsChangedEvent(this.newPoints);
@@ -148,9 +139,8 @@ class LevelUpEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'level': newLevel};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Bolus Events (Analysed + Authorization)                                  */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Bolus ───────────────────────────── */
+
 class BolusCalculatedEvent extends AppEvent {
   final double carbs;
   final double units;
@@ -180,7 +170,6 @@ class BolusCalculatedEvent extends AppEvent {
   };
 }
 
-/// Eltern‑Freigabe eines Bolus‑Vorschlags (genutzt vom Nightscout‑Service)
 class BolusAuthorizationEvent extends AppEvent {
   final double units;
   BolusAuthorizationEvent(this.units);
@@ -188,9 +177,8 @@ class BolusAuthorizationEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'units': units};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Sync / Settings Events                                                   */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Settings / Sync ────────────────── */
+
 class SettingsChangedEvent extends AppEvent {
   final String key;
   final dynamic value;
@@ -224,9 +212,8 @@ class NewMealDetectedEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'source': source};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Avatar Events                                                            */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Avatar ­────────────────────────── */
+
 abstract class AvatarEvent extends AppEvent {}
 
 class AvatarCelebrateEvent extends AvatarEvent {
@@ -246,9 +233,16 @@ class AvatarItemPreviewEvent extends AvatarEvent {
   Map<String, dynamic> toJson() => {'itemKey': itemKey};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Parent / Log Events (NEU)                                                */
-/* ------------------------------------------------------------------------- */
+/// 🔊 Text‑Ausgabe via TTS
+class AvatarSpeakEvent extends AvatarEvent {
+  final String text;
+  AvatarSpeakEvent(this.text);
+  @override
+  Map<String, dynamic> toJson() => {'text': text};
+}
+
+/* ────────────────── Parent / GPT ───────────────────── */
+
 class ParentLogEvent extends AppEvent {
   final String message;
   final DateTime timestamp;
@@ -256,11 +250,11 @@ class ParentLogEvent extends AppEvent {
 
   factory ParentLogEvent.fromTreatment(Map<String, dynamic> t) {
     final ts = DateTime.parse(t['created_at'] as String);
-    final msg = t['eventType'] == 'Carb Correction'
-        ? 'KH ${t['carbs']} g eingegeben'
-        : t['eventType'] == 'Bolus'
-        ? 'Bolus ${t['insulin']} U'
-        : t['eventType'];
+    final msg = switch (t['eventType']) {
+      'Carb Correction' => 'KH ${t['carbs']} g eingegeben',
+      'Bolus'           => 'Bolus ${t['insulin']} U',
+      _                 => t['eventType'] as String,
+    };
     return ParentLogEvent(message: msg, timestamp: ts);
   }
 
@@ -269,17 +263,22 @@ class ParentLogEvent extends AppEvent {
       {'message': message, 'timestamp': timestamp.toIso8601String()};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  GPT Recommendation Event (NEU)                                           */
-/* ------------------------------------------------------------------------- */
 class GPTRecommendationEvent extends AppEvent {
-  final dynamic result; // z. B. GPTAnalysisResult
+  final dynamic result;
   GPTRecommendationEvent(this.result);
   @override
   Map<String, dynamic> toJson() => {'result': result};
 }
 
-/// Neue Nightscout-Analyse mit Empfehlungen steht bereit.
+/// UI kann fertige GPT‑Antworten anzeigen.
+class GptResponseReceived extends AppEvent {
+  final Map<String, dynamic> response;
+  GptResponseReceived(this.response);
+  @override
+  Map<String, dynamic> toJson() => response;
+}
+
+/// Automatische Nightscout‑Analyse verfügbar
 class NightscoutAnalysisAvailableEvent extends AppEvent {
   final List<Map<String, dynamic>> recommendations;
   NightscoutAnalysisAvailableEvent(this.recommendations);
@@ -287,9 +286,8 @@ class NightscoutAnalysisAvailableEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'recommendations': recommendations};
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Fallback für unbekannte Native‑Events                                    */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Unknown Native → Generic ────────────────── */
+
 class GenericAapsEvent extends AppEvent {
   final String nativeType;
   final Map<String, dynamic> payload;
@@ -298,9 +296,8 @@ class GenericAapsEvent extends AppEvent {
   Map<String, dynamic> toJson() => payload;
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Factory‑Helper – wandelt Native ↔︎ Dart‑Events                           */
-/* ------------------------------------------------------------------------- */
+/* ────────────────── Factory Native → Dart ─────────────────── */
+
 class AppEventFactory {
   static AppEvent fromNative(String type, Map<String, dynamic> p) {
     switch (type) {
@@ -310,7 +307,6 @@ class AppEventFactory {
           components:
           (p['components'] as List).cast<Map<String, dynamic>>(),
         );
-
       case 'BolusCalculatedEvent':
         return BolusCalculatedEvent(
           carbs: (p['carbs'] as num).toDouble(),
@@ -321,25 +317,25 @@ class AppEventFactory {
           ratio: (p['ratio'] as num).toDouble(),
           source: p['source'] ?? '',
         );
-
       case 'ParentLogEvent':
         return ParentLogEvent(
           message: p['message'] ?? '',
           timestamp: DateTime.parse(p['timestamp']),
         );
-
       case 'BolusAuthorizationEvent':
         return BolusAuthorizationEvent(
           (p['units'] as num).toDouble(),
         );
-
+      case 'AvatarSpeakEvent':
+        return AvatarSpeakEvent(p['text'] ?? '');
       case 'GPTRecommendationEvent':
         return GPTRecommendationEvent(p['result']);
-
+      case 'GptResponseReceived':
+        return GptResponseReceived(
+            Map<String, dynamic>.from(p));
       case 'NightscoutAnalysisAvailableEvent':
         return NightscoutAnalysisAvailableEvent(
             List<Map<String, dynamic>>.from(p['recommendations'] ?? []));
-
       default:
         return GenericAapsEvent(type, p);
     }

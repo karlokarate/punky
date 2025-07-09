@@ -44,7 +44,7 @@ class RequestLimiter {
             await job();
             logger?.call(channel, DateTime.now());
           } catch (e, st) {
-            debugPrint('❌ Fehler im Job ($channel): $e');
+            debugPrint('❌ Fehler im Job ($channel): $e\n$st');
           }
           await Future.delayed(interval);
         });

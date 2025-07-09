@@ -1,10 +1,9 @@
 /*
- *  speech_service.dart  (v5 – FIXED VOSK API USAGE)
- *  --------------------------------------------------------------
- *  Whisper: Online mit Sprache "de"
- *  Vosk: Offline mit Modell im Asset-Verzeichnis
- *  iOS: Fallback mit speech_to_text
- *  Ergebnis geht direkt an TextParser
+ *  speech_service.dart  (v7 – COMPLETE)
+ *  --------------------------------------------------------------------------
+ *  • Basierend auf v5 (FIXED VOSK) :contentReference[oaicite:0]{index=0}
+ *  • Ergänzt: Listener auf AvatarSpeakEvent → TTS‑Bridge.
+ *  • Typ‑Fehler behoben: AvatarSpeakEvent ist jetzt im Event‑Modul vorhanden.
  */
 
 import 'dart:async';
@@ -23,51 +22,51 @@ import '../services/text_parser.dart';
 import 'settings_service.dart';
 import 'meal_analyzer.dart';
 
-class SpeechInputStartedEvent {}
-class SpeechInputFinishedEvent {
-  final String transcript;
-  const SpeechInputFinishedEvent(this.transcript);
-}
-class SpeechInputFailedEvent {
-  final String reason;
-  const SpeechInputFailedEvent(this.reason);
-}
-
 class SpeechService {
   SpeechService._();
   static final SpeechService instance = SpeechService._();
 
-  static const MethodChannel _speechBridge = MethodChannel('kidsapp/speech_bridge');
+  static const MethodChannel _micBridge   =
+  MethodChannel('kidsapp/mic');
+  static const MethodChannel _speechBridge =
+  MethodChannel('kidsapp/speech_bridge');
+  static const MethodChannel _ttsBridge    =
+  MethodChannel('kidsapp/tts');
 
   late SettingsService _settings;
   late EventBus _bus;
 
   Recognizer? _voskRecognizer;
-
   stt.SpeechToText? _iosFallback;
 
+  /* ─────────── Init ─────────── */
   Future<void> init(EventBus bus) async {
     _bus = bus;
     _settings = SettingsService.I;
 
+    // Avatar‑TTS
+    _bus.on<AvatarSpeakEvent>().listen((evt) => _speak(evt.text));
+
     if (_settings.speechMode != 'online') {
       await _initOfflineEngine();
     }
-
     _speechBridge.setMethodCallHandler(_onPluginCall);
   }
 
   Future<void> _initOfflineEngine() async {
     try {
       final vosk = VoskFlutterPlugin.instance();
-      final modelPath = await ModelLoader().loadFromAssets('assets/models/vosk-model-small-de-0.15.zip');
+      final modelPath = await ModelLoader().loadFromAssets(
+          'assets/models/vosk-model-small-de-0.15.zip');
       final model = await vosk.createModel(modelPath);
-      _voskRecognizer = await vosk.createRecognizer(model: model, sampleRate: 16000);
+      _voskRecognizer =
+      await vosk.createRecognizer(model: model, sampleRate: 16000);
     } catch (_) {
       _iosFallback = stt.SpeechToText();
     }
   }
 
+  /* ─────────── Public API ─────────── */
   Future<void> startListening() async {
     _bus.fire(SpeechInputStartedEvent());
 
@@ -85,20 +84,22 @@ class SpeechService {
     }
   }
 
+  /* ── Whisper (Online) ── */
   Future<bool> _listenWhisper() async {
     final key = _settings.whisperApiKey;
     if (key.isEmpty) return false;
 
     try {
-      final tempPath = '${(await getTemporaryDirectory()).path}/rec.wav';
-      if (!await _recordNative(tempPath)) return false;
+      final tmp = '${(await getTemporaryDirectory()).path}/rec.wav';
+      if (!await _recordNative(tmp)) return false;
 
-      final uri = Uri.parse('https://api.openai.com/v1/audio/transcriptions');
+      final uri = Uri.parse(
+          'https://api.openai.com/v1/audio/transcriptions');
       final req = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $key'
         ..fields['model'] = 'whisper-1'
         ..fields['language'] = 'de'
-        ..files.add(await http.MultipartFile.fromPath('file', tempPath));
+        ..files.add(await http.MultipartFile.fromPath('file', tmp));
 
       final rsp = await http.Response.fromStream(await req.send());
       if (rsp.statusCode != 200) return false;
@@ -111,19 +112,20 @@ class SpeechService {
     }
   }
 
+  /* ── Vosk / iOS (Offline) ── */
   Future<void> _listenOffline() async {
     try {
       if (_voskRecognizer != null) {
-        final audioPath = '${(await getTemporaryDirectory()).path}/vosk.wav';
-
+        final audioPath =
+            '${(await getTemporaryDirectory()).path}/vosk.wav';
         if (!await _recordNative(audioPath)) {
           _fail('no_audio');
           return;
         }
 
-        final file = File(audioPath);
-        final bytes = await file.readAsBytes();
-        final isFinal = await _voskRecognizer!.acceptWaveformBytes(bytes);
+        final bytes = await File(audioPath).readAsBytes();
+        final isFinal =
+        await _voskRecognizer!.acceptWaveformBytes(bytes);
         final resultJson = isFinal
             ? await _voskRecognizer!.getFinalResult()
             : await _voskRecognizer!.getResult();
@@ -138,7 +140,7 @@ class SpeechService {
         await _iosFallback!.initialize();
         String text = '';
         await _iosFallback!.listen(
-          onResult: (res) => text = res.recognizedWords,
+          onResult: (r) => text = r.recognizedWords,
           listenFor: const Duration(seconds: 5),
         );
         await Future.delayed(const Duration(seconds: 6));
@@ -151,10 +153,11 @@ class SpeechService {
     }
   }
 
+  /* ── Helpers ── */
   Future<bool> _recordNative(String outPath) async {
     try {
-      const channel = MethodChannel('kidsapp/mic');
-      final res = await channel.invokeMethod<String>('recordOnce', {'path': outPath});
+      final res = await _micBridge.invokeMethod<String>(
+          'recordOnce', {'path': outPath});
       return res == 'ok' && File(outPath).existsSync();
     } catch (_) {
       return false;
@@ -173,15 +176,25 @@ class SpeechService {
     await MealAnalyzer.I.analyze(txt);
   }
 
+  void _fail(String r) {
+    _bus
+      ..fire(SpeechInputFailedEvent(r))
+      ..fire(AvatarSadEvent());
+  }
+
   Future<void> _onPluginCall(MethodCall call) async {
     if (call.method == 'onSpeechError') {
       _fail(call.arguments ?? 'plugin_error');
     }
   }
 
-  void _fail(String r) {
-    _bus
-      ..fire(SpeechInputFailedEvent(r))
-      ..fire(AvatarSadEvent());
+  /* ── Avatar TTS ── */
+  Future<void> _speak(String text) async {
+    try {
+      await _ttsBridge.invokeMethod('speak', {
+        'text': text,
+        'lang': 'de',
+      });
+    } catch (_) {/* ignore */}
   }
 }

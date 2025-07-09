@@ -25,14 +25,6 @@
     werden kann, in höchstens drei Sätzen.
   avatar_react: sad
 
-- trigger: speech_input_failed_event
-  mode: offline
-  avatar_react: speak(Versuch es bitte noch einmal. Ich habe dich nicht verstanden.)
-
-- trigger: image_input_failed_event
-  mode: offline
-  avatar_react: sad
-
 - trigger: bolus_calculated_event
   mode: online
   prompt: |
@@ -42,6 +34,59 @@
       • Ratio: {{ratio}}
     Gib eine sehr kurze Rückfrage (max. 20 Wörter), wenn die Menge ungewöhnlich
     erscheint – ansonsten ein Lob.
+  avatar_react: speak(Überprüfe bitte die vorgeschlagene Insulinmenge.)
+
+- trigger: parent_log_event
+  mode: offline
+  avatar_react: none
+# gpt_rules.yaml  – Regeln für GptService  :contentReference[oaicite:1]{index=1}
+# ---------------------------------------------------------------
+# trigger‑Namen = snake_case(Event‑Klasse)
+
+- trigger: meal_analyzed_event
+  mode: online
+  prompt: |
+    Das Kind hat soeben eine Mahlzeit mit {{totalCarbs}} g Kohlenhydraten erfasst.
+    Erkläre in zwei Sätzen, warum die geschätzte KH‑Menge sinnvoll sein könnte
+    und gib einen kurzen Tipp zur genaueren Schätzung.
+  avatar_react: celebrate
+
+- trigger: meal_warning_event
+  mode: online
+  prompt: |
+    Folgende Warnungen wurden erkannt: {{warnings}}.
+    Formuliere eine kindgerechte Rückmeldung (max. 3 Sätze), wie die Mahlzeit
+    verbessert werden kann.
+  avatar_react: sad
+
+# ─────────── 🆕  Bild‑Pipeline  ───────────
+# GPT MUSS exakt das JSON‑Array liefern, das der ImageInputService erwartet!
+- trigger: image_input_finished_event
+  mode: online
+  prompt: |
+    Du erhältst ein Bildanalyse‑Ergebnis im Feld {{items}}.
+    Gib **genau dasselbe Array** unverändert zurück (JSON‑Format), damit die
+    Pipeline es weiterverarbeiten kann. Antworte **ohne** zusätzliche Worte oder
+    Markdown – nur das Array.
+  avatar_react: none
+
+- trigger: image_input_failed_event
+  mode: offline
+  avatar_react: sad
+
+- trigger: speech_input_failed_event
+  mode: offline
+  avatar_react: speak(Versuch es bitte noch einmal. Ich habe dich nicht verstanden.)
+
+- trigger: bolus_calculated_event
+  mode: online
+  prompt: |
+    Bolusvorschlag:
+      • KH: {{carbs}} g
+      • Insulin: {{units}} U
+      • Verhältnis: {{ratio}}
+    Gib eine Rückfrage (<= 20 Wörter), wenn Menge ungewöhnlich erscheint,
+    sonst Lob.
   avatar_react: speak(Überprüfe bitte die vorgeschlagene Insulinmenge.)
 
 - trigger: parent_log_event

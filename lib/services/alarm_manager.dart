@@ -1,10 +1,11 @@
 /*
- *  alarm_manager.dart  (v1.1 – FIXED)
+ *  alarm_manager.dart  (v1.2 – MODERNIZED)
  *  --------------------------------------------------------------
  *  Globale Alarm‑Engine
  *   • Subscribt auf AppEventBus
  *   • Erstellt Local‑Notification, Vibration, Sound
  *   • Plugin‑Modus: ruft AAPS‑Alarm via Plattform‑Channel auf
+ *   • Modernisiert: Pattern Matching, Lint-Fixes
  *
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
@@ -42,7 +43,6 @@ class AlarmManager {
     );
 
     _sub = AppEventBus.I.bus.on<AppEvent>().listen(_onEvent);
-
     await _player.setAsset('assets/sounds/alarm.mp3');
 
     AppEventBus.I.bus.on<GenericAapsEvent>().listen((e) {
@@ -55,25 +55,24 @@ class AlarmManager {
   /* ---------------- Event Listener ---------------- */
 
   Future<void> _onEvent(AppEvent e) async {
-    switch (e.runtimeType) {
-      case MealWarningEvent:
+    switch (e) {
+      case MealWarningEvent():
         await fireAlarm(
           title: '⚠️ Hohe KH‑Menge',
           body: 'Bitte Bolus prüfen!',
           level: AlarmLevel.critical,
         );
         break;
-      case PointsChangedEvent:
-        final ev = e as PointsChangedEvent;
-        if (ev.newPoints % 100 == 0) {
+      case PointsChangedEvent(:final newPoints):
+        if (newPoints % 100 == 0) {
           await fireAlarm(
             title: '🎉 Level‑Up',
-            body: 'Du hast ${ev.newPoints} Punkte erreicht!',
+            body: 'Du hast $newPoints Punkte erreicht!',
             level: AlarmLevel.normal,
           );
         }
         break;
-      case AvatarItemPreviewEvent:
+      case AvatarItemPreviewEvent():
         await fireAlarm(
           title: '🔓 Neues Avatar‑Item!',
           body: 'Schau dir dein Upgrade an.',
@@ -81,8 +80,8 @@ class AlarmManager {
           silent: true,
         );
         break;
-      case ImageInputFailedEvent:
-      case SpeechInputFailedEvent:
+      case ImageInputFailedEvent():
+      case SpeechInputFailedEvent():
         await fireAlarm(
           title: '⚠️ Eingabe fehlgeschlagen',
           body: 'Bitte noch einmal versuchen.',
@@ -118,7 +117,7 @@ class AlarmManager {
     await _showLocalNotification(title, body, level, silent);
 
     if (!silent) {
-      if (await Vibration.hasVibrator() ?? false) {
+      if (await Vibration.hasVibrator()) {
         Vibration.vibrate(pattern: [0, 400, 300, 400]);
       }
       await _playSound();
