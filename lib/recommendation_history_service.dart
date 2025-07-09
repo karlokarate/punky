@@ -43,7 +43,11 @@ class RecommendationHistoryService extends ChangeNotifier {
     // Cache aufbauen (ältest → neu)
     _cache
       ..clear()
-      ..addAll(_box.values.cast<Map>().toList());
+      ..addAll(
+        _box.values
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList(),
+      );
     _ready = true;
     notifyListeners();
   }

@@ -20,7 +20,6 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/settings_service.dart';
 

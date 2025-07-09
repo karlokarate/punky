@@ -15,7 +15,6 @@ import 'package:yaml/yaml.dart';
 
 import '../events/app_events.dart';
 import 'settings_service.dart';
-import 'avatar_service.dart';
 
 class GptService {
   GptService._();
@@ -69,7 +68,7 @@ class GptService {
     final apiKey = SettingsService.I.gptApiKey;
     if (apiKey.isEmpty) return; // kein Key → skip
 
-    final gptResp = await _callGpt(apiKey, rule, evt);
+    await _callGpt(apiKey, rule, evt);
     // TODO: Ergebnis weiterverarbeiten
   }
 

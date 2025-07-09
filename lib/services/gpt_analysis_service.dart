@@ -21,7 +21,7 @@ import 'package:event_bus/event_bus.dart';
 import 'settings_service.dart';
 import '../events/app_events.dart';
 import 'communication_service.dart';
-import 'recommendation_history_service.dart';
+import '../recommendation_history_service.dart';
 
 /// Ursprüngliches Ergebnis­objekt – bleibt erhalten.
 class GPTAnalysisResult {

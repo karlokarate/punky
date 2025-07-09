@@ -279,6 +279,14 @@ class GPTRecommendationEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'result': result};
 }
 
+/// Neue Nightscout-Analyse mit Empfehlungen steht bereit.
+class NightscoutAnalysisAvailableEvent extends AppEvent {
+  final List<Map<String, dynamic>> recommendations;
+  NightscoutAnalysisAvailableEvent(this.recommendations);
+  @override
+  Map<String, dynamic> toJson() => {'recommendations': recommendations};
+}
+
 /* ------------------------------------------------------------------------- */
 /*  Fallback für unbekannte Native‑Events                                    */
 /* ------------------------------------------------------------------------- */
@@ -327,6 +335,10 @@ class AppEventFactory {
 
       case 'GPTRecommendationEvent':
         return GPTRecommendationEvent(p['result']);
+
+      case 'NightscoutAnalysisAvailableEvent':
+        return NightscoutAnalysisAvailableEvent(
+            List<Map<String, dynamic>>.from(p['recommendations'] ?? []));
 
       default:
         return GenericAapsEvent(type, p);

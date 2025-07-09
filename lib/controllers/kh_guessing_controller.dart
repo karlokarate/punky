@@ -21,7 +21,6 @@ import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/gamification_service.dart';
-import '../services/avatar_service.dart';
 
 class KhGuessingStartedEvent extends AppEvent {
   final double actual;

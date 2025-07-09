@@ -10,11 +10,9 @@
  */
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:event_bus/event_bus.dart';
 
-import '../core/app_initializer.dart';
 import 'fcm_service.dart';
 import 'sms_service.dart';
 import 'settings_service.dart';
