@@ -51,9 +51,8 @@ dependencies:
   yaml: ^3.1.2
   lottie: ^3.3.1
   fl_chart: ^0.66.0
-  rate_limiter: ^1.1.0
   async: ^2.11.0
-
+  synchronized: ^3.0.0
   # Basics
   path: any
   flutter_local_notifications: any
@@ -86,6 +85,7 @@ flutter:
     - lib/assets/db/products.sqlite
     - assets/models/vosk-model-small-de-0.15/
     - lib/l10n/
+    - assets/config/gpt_rules.yaml
 
 dependency_overrides:
   archive: ^4.0.0

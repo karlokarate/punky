@@ -1,8 +1,9 @@
 /*
- *  app_initializer.dart  (v4 – FINAL)
+ *  app_initializer.dart  (v6 – Bootstrapping erweitert)
  *  --------------------------------------------------------------
- *  Boot‑Strap mit neuem AppEventBus.
- *
+ *  • SettingsService & NightscoutService mit init()
+ *  • Alle Dienste mit expliziter Init-Logik eingebunden
+ *  • Zentrale AppContext-Rückgabe
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
@@ -42,25 +43,21 @@ class AppInitializer {
   AppInitializer._();
 
   static Future<AppContext> init({required AppFlavor flavor}) async {
-    /* 1 | SQLite */
+    // 1 | SQLite
     final dbPath = p.join(await getDatabasesPath(), 'kidsapp_${flavor.name}.db');
     final db = await openDatabase(dbPath, version: 1);
 
-    /* 2 | EventBus (inkl. Plugin‑Bridge) */
+    // 2 | EventBus (inkl. Plugin‑Bridge)
     await AppEventBus.init(flavor);
     final bus = AppEventBus.I;
 
-    /* 3 | Settings */
-    await SettingsService.init(flavor);
-    final settings = SettingsService.I;
+    // 3 | Settings vorbereiten
+    final settings = await SettingsService.create();
 
-    /* 4 | Services */
+    // 4 | Services initialisieren
     await PushService.instance.init(bus.bus);
     await SmsService.instance.init();
-
-    final avatar = AvatarService.I;
-    await avatar.init(bus.bus);
-
+    await AvatarService.I.init(bus.bus);
     await GamificationService.instance.init();
     await GptService.I.init(bus.bus);
     await ImageInputService.instance.init(bus.bus);

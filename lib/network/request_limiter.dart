@@ -1,16 +1,52 @@
-import 'package:rate_limiter/rate_limiter.dart';
+/// --------------------------------------------------------------------------
+///  request_limiter.dart  (v1 – Core‑Engine)
+/// --------------------------------------------------------------------------
+///  • FIFO‑Queue zur Begrenzung paralleler Request‑Ausführung
+///  • Nutzung über: `schedule(() async => ...)`
+///  • Kein Rückgabewert – Job muss intern mit Completer<T> arbeiten, wenn nötig.
+///  • Fehler im Job müssen intern behandelt werden – kein catch hier!
+/// --------------------------------------------------------------------------
 
-/// Globale Instanz für alle externen HTTP-Aufrufe.
-/// Konfig: 1 Request alle 30 s (Burst-Größe 1).
-class ApiRateLimiter {
-  static final ApiRateLimiter I = ApiRateLimiter._();
-  late final RateLimiter _limiter;
+import 'dart:async';
+import 'dart:collection';
+import 'package:synchronized/synchronized.dart';
 
-  ApiRateLimiter._() {
-    _limiter = RateLimiter(const Duration(seconds: 30), 1);
+class RequestLimiter {
+  /// Mindestabstand zwischen zwei Jobs.
+  final Duration interval;
+
+  /// Lock zur Vermeidung paralleler Jobs.
+  final Lock _lock = Lock();
+
+  /// Warteschlange aller geplanten Jobs.
+  final Queue<Future Function()> _queue = Queue<Future Function()>();
+
+  bool _running = false;
+
+  RequestLimiter(this.interval);
+
+  /// Fügt einen neuen Job zur Queue hinzu.
+  void schedule(Future Function() job) {
+    _queue.add(job);
+    _run();
   }
 
-  /// Führt [fn] erst aus, wenn mindestens ein Token verfügbar ist.
-  /// Gibt das Ergebnis von [fn] zurück.
-  Future<T> exec<T>(Future<T> Function() fn) => _limiter.schedule(fn);
+  /// Interner Ablauf der Warteschlange
+  Future<void> _run() async {
+    if (_running) return;
+    _running = true;
+
+    try {
+      while (_queue.isNotEmpty) {
+        await _lock.synchronized(() async {
+          final job = _queue.removeFirst();
+          await job();
+          await Future.delayed(interval);
+        });
+      }
+    } finally {
+      _running = false;
+      if (_queue.isNotEmpty) _run(); // Re-trigger bei Nachzüglern
+    }
+  }
 }

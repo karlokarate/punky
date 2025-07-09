@@ -154,6 +154,26 @@ groups:
   - title: limits
     label: limits.title
     fields:
+      - key: limits.rate_limit_nightscout
+        type: int
+        label: limits.rate_limit_nightscout
+        default: 30
+
+      - key: limits.rate_limit_gpt
+        type: int
+        label: limits.rate_limit_gpt
+        default: 3
+
+      - key: limits.rate_limit_sms
+        type: int
+        label: limits.rate_limit_sms
+        default: 20
+
+      - key: limits.rate_limit_push
+        type: int
+        label: limits.rate_limit_push
+        default: 5
+
       - key: limits.bz_min
         type: int
         label: limits.bz_min

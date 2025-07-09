@@ -1,8 +1,9 @@
 /*
- *  settings_screen.dart  (v5 – Eltern‑PIN‑Feld ergänzt)
+ *  settings_screen.dart  (v6 – GlobalRateLimiter integriert + komplett)
  *  --------------------------------------------------------------
- *  Dynamischer UI‑Screen basierend auf settings_schema.yaml.
- *  Neu: PIN‑Feld für Eltern‑Freigaben unter Abschnitt „Sicherheit“.
+ *  • Fügt RateLimiter-Einstellungen ins UI ein (Nightscout, GPT, SMS, Push)
+ *  • Werte wirken sofort dank EventBus
+ *  • Eltern‑PIN‑Feld unter Abschnitt „Sicherheit“ bleibt erhalten
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
@@ -23,12 +24,10 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ChangeNotifierProvider.value(
-        value: _SettingsAdapter(SettingsService.I),
-        child: const _SettingsBody(),
-      );
+    value: _SettingsAdapter(SettingsService.I),
+    child: const _SettingsBody(),
+  );
 }
-
-/* ---------------- Body ---------------- */
 
 class _SettingsBody extends StatefulWidget {
   const _SettingsBody();
@@ -87,6 +86,12 @@ class _SettingsBodyState extends State<_SettingsBody> {
           _sectionHeader(l.sectionHealth, t),
           _numberField(l.labelCarbWarn, adapter.carbWarn, adapter.setCarbWarn),
 
+          _sectionHeader("Rate Limits", t),
+          _numberField("Nightscout (Sekunden)", adapter.rlNs, adapter.setRlNs),
+          _numberField("GPT (Sekunden)", adapter.rlGpt, adapter.setRlGpt),
+          _numberField("SMS (Sekunden)", adapter.rlSms, adapter.setRlSms),
+          _numberField("Push (Sekunden)", adapter.rlPush, adapter.setRlPush),
+
           _sectionHeader(l.sectionAvatar, t),
           _dropdown(l.labelTheme, adapter.theme, adapter.setTheme,
               SettingsService.defaultThemes),
@@ -96,7 +101,6 @@ class _SettingsBodyState extends State<_SettingsBody> {
             onTap: () => _pickAvatarItem(context),
           ),
 
-          /* ----------- NEU: Abschnitt „Sicherheit“ ---------------- */
           _sectionHeader(l.sectionSecurity, t),
           _pinField(l.labelParentPin, adapter.pin, adapter.setPin),
 
@@ -114,23 +118,17 @@ class _SettingsBodyState extends State<_SettingsBody> {
     );
   }
 
-  /* ---------------- Helper Widgets ---------------- */
-
   Widget _sectionHeader(String title, ThemeData t) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
-        child: Text(
-          title,
-          style: t.textTheme.titleMedium!.copyWith(
-            color: t.colorScheme.secondary,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+    child: Text(
+      title,
+      style: t.textTheme.titleMedium!.copyWith(
+        color: t.colorScheme.secondary,
+      ),
+    ),
+  );
 
-  Widget _textField(
-    String label,
-    String val,
-    Future<void> Function(String) setter,
-  ) =>
+  Widget _textField(String label, String val, Future<void> Function(String) setter) =>
       ListTile(
         title: Text(label),
         subtitle: TextFormField(
@@ -139,11 +137,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         ),
       );
 
-  Widget _pinField(
-    String label,
-    String val,
-    Future<void> Function(String) setter,
-  ) =>
+  Widget _pinField(String label, String val, Future<void> Function(String) setter) =>
       ListTile(
         title: Text(label),
         subtitle: TextFormField(
@@ -154,47 +148,33 @@ class _SettingsBodyState extends State<_SettingsBody> {
         ),
       );
 
-  Widget _numberField(
-    String label,
-    int val,
-    Future<void> Function(int) setter,
-  ) =>
+  Widget _numberField(String label, int val, Future<void> Function(int) setter) =>
       ListTile(
         title: Text(label),
         subtitle: TextFormField(
           initialValue: '$val',
           keyboardType: TextInputType.number,
-          onFieldSubmitted: (v) async =>
-              await setter(int.tryParse(v) ?? val),
+          onFieldSubmitted: (v) async => await setter(int.tryParse(v) ?? val),
         ),
       );
 
-  Widget _dropdown(
-    String label,
-    String current,
-    Future<void> Function(String?) onChanged,
-    List<String> opts,
-  ) {
+  Widget _dropdown(String label, String current, Future<void> Function(String?) onChanged, List<String> opts) {
     return ListTile(
       title: Text(label),
       trailing: DropdownButton<String>(
         value: current,
         items: opts
             .map((e) => DropdownMenuItem(
-                  value: e,
-                  child: Text(e.toUpperCase()),
-                ))
+          value: e,
+          child: Text(e.toUpperCase()),
+        ))
             .toList(),
         onChanged: (v) async => await onChanged(v),
       ),
     );
   }
 
-  Widget _boolSwitch(
-    String label,
-    bool val,
-    Future<void> Function(bool) setter,
-  ) =>
+  Widget _boolSwitch(String label, bool val, Future<void> Function(bool) setter) =>
       SwitchListTile(
         title: Text(label),
         value: val,
@@ -231,8 +211,6 @@ class _SettingsBodyState extends State<_SettingsBody> {
   }
 }
 
-/* ---------------- Adapter ---------------- */
-
 class _SettingsAdapter extends ChangeNotifier {
   final SettingsService s;
   _SettingsAdapter(this.s);
@@ -250,15 +228,23 @@ class _SettingsAdapter extends ChangeNotifier {
   bool get sms => s.enableSms;
   bool get mute => s.muteAlarms;
   String get phone => s.parentPhone;
-  String get pin => s.parentPin;             // ← NEU
+  String get pin => s.parentPin;
 
   int get ppMeal => s.pointsPerMeal;
   int get ppSnack => s.pointsPerSnack;
   int get bonus => s.bonusEverySnacks;
-
   int get carbWarn => s.carbWarnThreshold;
-
   String get theme => s.childThemeKey;
+
+  int get rlNs => s.rateLimitNightscout;
+  int get rlGpt => s.rateLimitGpt;
+  int get rlSms => s.rateLimitSms;
+  int get rlPush => s.rateLimitPush;
+
+  Future<void> setRlNs(int v) => _set(() => s.setRateLimitNightscout(v));
+  Future<void> setRlGpt(int v) => _set(() => s.setRateLimitGpt(v));
+  Future<void> setRlSms(int v) => _set(() => s.setRateLimitSms(v));
+  Future<void> setRlPush(int v) => _set(() => s.setRateLimitPush(v));
 
   Future<void> setNsUrl(String v) => _set(() => s.setNightscoutUrl(v));
   Future<void> setNsSecret(String v) => _set(() => s.setNightscoutSecret(v));
@@ -266,21 +252,18 @@ class _SettingsAdapter extends ChangeNotifier {
   Future<void> setWhisper(String v) => _set(() => s.setWhisperApiKey(v));
   Future<void> setVision(String v) => _set(() => s.setVisionApiKey(v));
 
-  Future<void> setSpeechMode(String? v) =>
-      _set(() => s.setSpeechMode(v ?? s.speechMode));
-  Future<void> setImageMode(String? v) =>
-      _set(() => s.setImageMode(v ?? s.imageMode));
+  Future<void> setSpeechMode(String? v) => _set(() => s.setSpeechMode(v ?? s.speechMode));
+  Future<void> setImageMode(String? v) => _set(() => s.setImageMode(v ?? s.imageMode));
 
   Future<void> setPush(bool v) => _set(() => s.setEnablePush(v));
   Future<void> setSms(bool v) => _set(() => s.setEnableSms(v));
   Future<void> setMute(bool v) => _set(() => s.setMuteAlarms(v));
   Future<void> setPhone(String v) => _set(() => s.setParentPhone(v));
-  Future<void> setPin(String v) => _set(() => s.setParentPin(v)); // ← NEU
+  Future<void> setPin(String v) => _set(() => s.setParentPin(v));
 
   Future<void> setPpMeal(int v) => _set(() => s.setPointsPerMeal(v));
   Future<void> setPpSnack(int v) => _set(() => s.setPointsPerSnack(v));
   Future<void> setBonusSnacks(int v) => _set(() => s.setBonusEverySnacks(v));
-
   Future<void> setCarbWarn(int v) => _set(() => s.setCarbWarnThreshold(v));
 
   Future<void> setTheme(String? v) async {

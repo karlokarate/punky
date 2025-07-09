@@ -36,7 +36,7 @@
   "labelSpeechMode": "Sprachmodus",
   "labelImageMode": "Bildmodus",
   "sectionSecurity": "Security",
-  "labelParentPin" : "Parent PIN"
+  "labelParentPin" : "Parent PIN",
   "sectionNotifications": "Benachrichtigungen",
   "@sectionNotifications": { "description": "Push, SMS & Mute" },
   "labelPush": "Push aktivieren",

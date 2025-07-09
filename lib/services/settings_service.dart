@@ -152,6 +152,24 @@ class SettingsService extends ChangeNotifier {
       _prefs.getDouble('kidsapp_max_bolus') ?? 10.0;
   Future<void> setMaxBolusUnits(double v) async =>
       _set('kidsapp_max_bolus', v);
+  /* ----------------------------------------------------------------------- */
+  /*  Rate-Limiting für GlobalRateLimiter                                   */
+  /* ----------------------------------------------------------------------- */
+  int get rateLimitNightscout => _prefs.getInt('kidsapp_rate_ns') ?? 30;
+  Future<void> setRateLimitNightscout(int v) async =>
+      _set('kidsapp_rate_ns', v);
+
+  int get rateLimitGpt => _prefs.getInt('kidsapp_rate_gpt') ?? 3;
+  Future<void> setRateLimitGpt(int v) async =>
+      _set('kidsapp_rate_gpt', v);
+
+  int get rateLimitSms => _prefs.getInt('kidsapp_rate_sms') ?? 20;
+  Future<void> setRateLimitSms(int v) async =>
+      _set('kidsapp_rate_sms', v);
+
+  int get rateLimitPush => _prefs.getInt('kidsapp_rate_push') ?? 5;
+  Future<void> setRateLimitPush(int v) async =>
+      _set('kidsapp_rate_push', v);
 
   /* ----------------------------------------------------------------------- */
   /*  Gamification                                                           */
@@ -236,6 +254,10 @@ class SettingsService extends ChangeNotifier {
       'pointsPerMeal': () => setPointsPerMeal(value),
       'pointsPerSnack': () => setPointsPerSnack(value),
       'bonusEverySnacks': () => setBonusEverySnacks(value),
+      'rateLimitNightscout': () => setRateLimitNightscout(value),
+      'rateLimitGpt': () => setRateLimitGpt(value),
+      'rateLimitSms': () => setRateLimitSms(value),
+      'rateLimitPush': () => setRateLimitPush(value),
       'carbWarnThreshold': () => setCarbWarnThreshold(value),
       'childThemeKey': () => setChildTheme(value),
       'insulinRatio': () => setInsulinRatio(

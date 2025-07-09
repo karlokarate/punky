@@ -66,3 +66,4 @@ class AppEventBus {
   /// Globale Event‑Bridge
   Stream<dynamic> get stream => bus.on();
 }
+EventBus get eventBus => AppEventBus.I.bus;

@@ -2,12 +2,6 @@
 //
 // v5 – Cockpit mit Chart, GPT‑Analyse, Profil‑Patch, PIN‑Guard,
 //      Verlauf **und** dynamischem Tages‑Durchschnitt (ab 06:00)
-//
-// ➊  Kleines Info‑Kästchen zeigt immer den Durchschnitt ab 06:00 Uhr bis jetzt.
-// ➋  Doppel‑Tap öffnet Kalender‑ & Uhr‑Dialoge zur freien Zeit­raum‑Anpassung.
-// ➌  Berechnet Average live aus ns.cachedEntries.
-//
-// --------------------------------------------------------------------------
 
 import 'dart:async';
 
@@ -23,50 +17,45 @@ import '../services/nightscout_service.dart';
 import '../recommendation_history_service.dart';
 import '../services/settings_service.dart';
 import '../widgets/pin_guard.dart';
+import '../services/nightscout_models.dart';
 
 class ParentScreen extends StatefulWidget {
-  const ParentScreen({Key? key}) : super(key: key);
+  const ParentScreen({super.key});
 
   @override
   State<ParentScreen> createState() => _ParentScreenState();
 }
 
 class _ParentScreenState extends State<ParentScreen> {
-  late StreamSubscription _logSub;
-  late StreamSubscription _recSub;
+  late final StreamSubscription _logSub;
+  late final StreamSubscription _recSub;
 
   String? _gptAdvice;
   bool _isAnalyzing = false;
-
   List<Map<String, dynamic>> _latestRecs = [];
-
-  /// ⏱ Zeitraum für Durchschnitt
   late DateTime _avgFrom;
   late DateTime _avgTo;
 
   @override
   void initState() {
     super.initState();
-
-    // Default: Heute 06:00 → Jetzt
     final now = DateTime.now();
     _avgFrom = DateTime(now.year, now.month, now.day, 6);
-    _avgTo   = now;
+    _avgTo = now;
 
-    // Parent‑Log
     _logSub = eventBus.on<ParentLogEvent>().listen((_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
     });
 
-    // Empfehlungen
     _recSub = eventBus.on<NightscoutAnalysisAvailableEvent>().listen((evt) {
+      if (!mounted) return;
       setState(() => _latestRecs = evt.recommendations);
     });
 
-    // letzte gespeicherte Empfehlung
-    final hist = RecommendationHistoryService.i.getHistory();
-    if (hist.isNotEmpty) {
-      _latestRecs = List<Map<String, dynamic>>.from(hist.last['recs']);
+    final hist = RecommendationHistoryService.i.latest;
+    if (hist != null) {
+      _latestRecs = List<Map<String, dynamic>>.from(hist['recs']);
     }
   }
 
@@ -77,72 +66,103 @@ class _ParentScreenState extends State<ParentScreen> {
     super.dispose();
   }
 
-  /* ───────────────────────── Durchschnitt ────────────────────────── */
+  // -------------------------------------------------------------------------
+  // Helfer
+  // -------------------------------------------------------------------------
 
   double? _calcAverage(List<GlucoseEntry> entries) {
-    final sub = entries.where((e) =>
-        !e.date.isBefore(_avgFrom) && !e.date.isAfter(_avgTo) && e.sgv != null);
+    final sub = entries
+        .where((e) => e.date.isAfter(_avgFrom) && e.date.isBefore(_avgTo))
+        .toList();
+
     if (sub.isEmpty) return null;
-    final sum = sub.fold<int>(0, (acc, e) => acc + e.sgv!.round());
+
+    final sum = sub.fold<int>(0, (acc, e) => acc + e.sgv.round());
     return sum / sub.length;
   }
 
-  Future<void> _pickAvgRange(BuildContext ctx) async {
+  // -------------------------------------------------------------------------
+  // Zeitraum‑Picker für Durchschnitt
+  // -------------------------------------------------------------------------
+
+  Future<void> _pickAvgRange(BuildContext context) async {
+    if (!context.mounted) return;
+
     final initRange = DateTimeRange(start: _avgFrom, end: _avgTo);
 
     final pickedRange = await showDateRangePicker(
-      context: ctx,
+      context: context,
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate : DateTime.now(),
+      lastDate: DateTime.now(),
       initialDateRange: initRange,
     );
-    if (pickedRange == null) return;
+    if (pickedRange == null || !context.mounted) return;
 
-    // Start‑Zeit wählen
     final startTime = await showTimePicker(
-      context: ctx,
+      context: context,
       initialTime: TimeOfDay.fromDateTime(_avgFrom),
     );
-    if (startTime == null) return;
+    if (startTime == null || !context.mounted) return;
 
-    // End‑Zeit
     final endTime = await showTimePicker(
-      context: ctx,
+      context: context,
       initialTime: TimeOfDay.fromDateTime(_avgTo),
     );
-    if (endTime == null) return;
+    if (endTime == null || !context.mounted) return;
 
+    if (!context.mounted) return;
     setState(() {
-      _avgFrom = DateTime(pickedRange.start.year, pickedRange.start.month,
-          pickedRange.start.day, startTime.hour, startTime.minute);
-      _avgTo = DateTime(pickedRange.end.year, pickedRange.end.month,
-          pickedRange.end.day, endTime.hour, endTime.minute);
+      _avgFrom = DateTime(
+        pickedRange.start.year,
+        pickedRange.start.month,
+        pickedRange.start.day,
+        startTime.hour,
+        startTime.minute,
+      );
+      _avgTo = DateTime(
+        pickedRange.end.year,
+        pickedRange.end.month,
+        pickedRange.end.day,
+        endTime.hour,
+        endTime.minute,
+      );
     });
   }
 
-  /* ─────────────────────  GPT‑Analyse (manuell)  ───────────────────── */
+  // -------------------------------------------------------------------------
+  // GPT‑Analyse
+  // -------------------------------------------------------------------------
 
   Future<void> _runGptAnalysis(BuildContext context) async {
+    if (!context.mounted) return;
     setState(() => _isAnalyzing = true);
 
     final nightscout = context.read<NightscoutService>();
-    final history    = await nightscout.getRecentEntries(limit: 288); // 24 h
-    final gpt        = context.read<GptAnalysisService>();
-    final advice     = await gpt.analyzeNightscout(history);
+    final gpt = context.read<GptAnalysisService>();
 
+    final history = await nightscout.getRecentEntries(limit: 288);
+    final advice = await gpt.analyzeNightscout(history);
+
+    if (!context.mounted) return;
     setState(() {
-      _gptAdvice   = advice?.suggestion ?? 'Keine Empfehlung erhalten.';
+      _gptAdvice = advice?.suggestion ?? 'Keine Empfehlung erhalten.';
       _isAnalyzing = false;
     });
 
     eventBus.fire(GPTRecommendationEvent(advice));
   }
 
-  /* ─────────────────────  Profil‑Patch übernehmen  ─────────────────── */
+  // -------------------------------------------------------------------------
+  // Empfehlungen anwenden
+  // -------------------------------------------------------------------------
 
-  Future<void> _applyRecommendations(BuildContext ctx) async {
-    if (_latestRecs.isEmpty) return;
-    if (!await PinGuard.require(ctx)) return;
+  Future<void> _applyRecommendations(BuildContext context) async {
+    if (!context.mounted || _latestRecs.isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final ns = context.read<NightscoutService>();
+
+    if (!await PinGuard.require(context)) return;
 
     final patch = <String, dynamic>{};
     for (final r in _latestRecs) {
@@ -150,32 +170,46 @@ class _ParentScreenState extends State<ParentScreen> {
       patch.addAll(p);
     }
 
-    final ns  = ctx.read<NightscoutService>();
-    final ok  = await ns.uploadProfilePatch(patch);
-    final msg = ok ? 'Profil angepasst' : 'Upload fehlgeschlagen';
-    if (!mounted) return;
-    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(msg)));
+    final ok = await ns.uploadProfilePatch(patch);
+    if (!context.mounted) return;
+
+    messenger.showSnackBar(
+      SnackBar(content: Text(ok ? 'Profil angepasst' : 'Upload fehlgeschlagen')),
+    );
   }
 
-  /* ─────────────────────  Bolus‑Freigabe  ──────────────────────────── */
+  // -------------------------------------------------------------------------
+  // Bolus freigeben
+  // -------------------------------------------------------------------------
 
   Future<void> _authorizeBolus(BuildContext context) async {
-    final ns  = context.read<NightscoutService>();
-    final ok  = await ns.authorizePendingBolus();
-    final msg = ok ? 'Bolus freigegeben' : 'Freigabe fehlgeschlagen';
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (!context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final ns = context.read<NightscoutService>();
+
+    final ok = await ns.authorizePendingBolus();
+    if (!context.mounted) return;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Bolus freigegeben' : 'Freigabe fehlgeschlagen'),
+      ),
+    );
   }
 
-  /* ─────────────────────  UI  ──────────────────────────────────────── */
+  // -------------------------------------------------------------------------
+  // Build‑Methode
+  // -------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    final ns       = context.watch<NightscoutService>();
-    final sgv      = ns.currentEntry;
-    final entries  = ns.cachedEntries;
+    final ns = context.watch<NightscoutService>();
+    final sgv = ns.currentEntry;
+    final entries = ns.cachedEntries;
     final settings = context.watch<SettingsService>();
-    final avg      = _calcAverage(entries);
+    final avg = _calcAverage(entries);
+    final history = RecommendationHistoryService.i.getHistory();
 
     return Scaffold(
       appBar: AppBar(
@@ -190,7 +224,6 @@ class _ParentScreenState extends State<ParentScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          /*  ------------- Aktuell + Durchschnitt ------------- */
           Row(
             children: [
               Expanded(child: _CurrentGlucoseTile(entry: sgv)),
@@ -204,84 +237,52 @@ class _ParentScreenState extends State<ParentScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
           _GlucoseChart(entries: entries),
           const SizedBox(height: 16),
-
-          /* --------- Karte: Aktuelle Therapie‑Empfehlung --------- */
-          if (_latestRecs.isNotEmpty) Card(
-            color: Colors.amber[50],
-            child: ListTile(
-              leading: const Icon(Icons.lightbulb),
-              title  : const Text('Therapie‑Empfehlung'),
-              subtitle: Text(
-                _latestRecs
-                    .map((r) => '• ${r['change']} (${r['reason']})')
-                    .join('\n'),
-              ),
-              trailing: ElevatedButton(
-                onPressed: () => _applyRecommendations(context),
-                child: const Text('Übernehmen'),
+          if (_latestRecs.isNotEmpty)
+            Card(
+              color: Colors.amber[50],
+              child: ListTile(
+                leading: const Icon(Icons.lightbulb),
+                title: const Text('Therapie‑Empfehlung'),
+                subtitle: Text(
+                  _latestRecs
+                      .map((r) => '• ${r['change']} (${r['reason']})')
+                      .join('\n'),
+                ),
+                trailing: ElevatedButton(
+                  onPressed: () => _applyRecommendations(context),
+                  child: const Text('Übernehmen'),
+                ),
               ),
             ),
-          ),
-
-          /*  ----- Verlaufs‑Liste (aus RecommendationHistory) ----- */
-          if (RecommendationHistoryService.i.getHistory().isNotEmpty)
-            ExpansionTile(
-              title: const Text('Vergangene Empfehlungen'),
-              children: RecommendationHistoryService.i
-                  .getHistory()
-                  .reversed
-                  .map<Widget>((h) => ListTile(
-                        title: Text(
-                          DateFormat.yMMMd()
-                              .add_Hm()
-                              .format(DateTime.parse(h['ts'])),
-                        ),
-                        subtitle: Text((h['recs'] as List)
-                            .map((r) => '• ${r['change']} (${r['reason']})')
-                            .join('\n')),
-                      ))
-                  .toList(),
-            ),
-
+          if (history.isNotEmpty) _HistoryPopover(history: history),
           const Divider(),
-
-          /*  --------- Manuelle GPT‑Analyse (24 h) --------- */
           ListTile(
             leading: const Icon(Icons.analytics_outlined),
-            title  : Text(_gptAdvice ?? 'GPT‑Analyse starten (24 h Verlauf)'),
+            title: Text(_gptAdvice ?? 'GPT‑Analyse starten (24 h Verlauf)'),
             trailing: _isAnalyzing
                 ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child:
-                        CircularProgressIndicator(strokeWidth: 3),
-                  )
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            )
                 : IconButton(
-                    icon: const Icon(Icons.play_arrow),
-                    onPressed: () => _runGptAnalysis(context),
-                  ),
+              icon: const Icon(Icons.play_arrow),
+              onPressed: () => _runGptAnalysis(context),
+            ),
           ),
-
           const Divider(),
-
-          /*  --------- Bolus‑Freigabe --------- */
           ListTile(
             leading: const Icon(Icons.check_circle_outline),
-            title  : const Text('Bolus‑Abgabe freigeben'),
-            subtitle: Text(
-                'Max ${settings.maxBolusUnits.toStringAsFixed(1)} U'),
+            title: const Text('Bolus‑Abgabe freigeben'),
+            subtitle: Text('Max ${settings.maxBolusUnits.toStringAsFixed(1)} U'),
             trailing: ElevatedButton(
               onPressed: () => _authorizeBolus(context),
               child: const Text('Freigeben'),
             ),
           ),
-
           const Divider(),
-
-          /*  --------- Ereignis‑Log --------- */
           Text('Ereignis‑Log', style: Theme.of(context).textTheme.titleLarge),
           ...List<ParentLogEvent>.from(ns.parentLog)
               .reversed
@@ -292,17 +293,23 @@ class _ParentScreenState extends State<ParentScreen> {
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Log‑Tile
+  // -------------------------------------------------------------------------
+
   Widget _eventTile(ParentLogEvent e) {
     final fmt = DateFormat.Hm();
     return ListTile(
       leading: const Icon(Icons.event_note),
-      title  : Text(e.message),
+      title: Text(e.message),
       subtitle: Text(fmt.format(e.timestamp)),
     );
   }
 }
 
-/* ─────────────────────  Widgets  ───────────────────────────────────── */
+// ---------------------------------------------------------------------------
+// UI‑Bausteine
+// ---------------------------------------------------------------------------
 
 class _CurrentGlucoseTile extends StatelessWidget {
   final GlucoseEntry? entry;
@@ -310,16 +317,16 @@ class _CurrentGlucoseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final value = entry?.sgv?.toStringAsFixed(0) ?? '—';
+    final value = entry?.sgv.toStringAsFixed(0) ?? '—';
     final trend = entry?.trendArrow ?? ' ';
-    final time  = entry != null
+    final time = entry?.date != null
         ? DateFormat.Hm().format(entry!.date)
         : 'Keine Daten';
 
     return Card(
       child: ListTile(
-        leading : const Icon(Icons.opacity),
-        title   : Text('$value mg/dl $trend',
+        leading: const Icon(Icons.opacity),
+        title: Text('$value mg/dl $trend',
             style: Theme.of(context).textTheme.headlineMedium),
         subtitle: Text('aktualisiert $time'),
       ),
@@ -342,7 +349,7 @@ class _AverageBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final txt = avg != null ? avg!.toStringAsFixed(0) : '—';
+    final txt = avg?.toStringAsFixed(0) ?? '—';
     final subtitle =
         '${DateFormat.Hm().format(from)}–${DateFormat.Hm().format(to)}';
 
@@ -357,11 +364,13 @@ class _AverageBox extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text('Ø mg/dl', style: TextStyle(fontSize: 12)),
-              Text(txt,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                txt,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
               Text(subtitle, style: const TextStyle(fontSize: 11)),
             ],
           ),
@@ -382,8 +391,10 @@ class _GlucoseChart extends StatelessWidget {
     }
 
     final spots = entries
-        .map((e) => FlSpot(e.date.millisecondsSinceEpoch.toDouble(),
-            e.sgv?.toDouble() ?? 0.0))
+        .map((e) => FlSpot(
+      e.date.millisecondsSinceEpoch.toDouble(),
+      e.sgv.toDouble(),
+    ))
         .toList();
 
     final minX = spots.first.x;
@@ -409,6 +420,70 @@ class _GlucoseChart extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _HistoryPopover extends StatelessWidget {
+  final List<Map<String, dynamic>> history;
+  const _HistoryPopover({required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text('Vergangene Empfehlungen'),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Verlauf löschen',
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Verlauf löschen?'),
+                  content: const Text('Der gesamte Verlauf wird gelöscht.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Abbrechen'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Löschen'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm != true) return;
+
+              await RecommendationHistoryService.i.clear();
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Verlauf gelöscht')),
+              );
+            },
+          ),
+        ],
+      ),
+      children: history
+          .reversed
+          .map(
+            (h) => ListTile(
+          title: Text(
+            DateFormat.yMMMd().add_Hm().format(DateTime.parse(h['ts'])),
+          ),
+          subtitle: Text(
+            (h['recs'] as List)
+                .map((r) => '• ${r['change']} (${r['reason']})')
+                .join('\n'),
+          ),
+        ),
+      )
+          .toList(),
     );
   }
 }

@@ -1,0 +1,49 @@
+# GPT‑Regeldatei  –  wird von gpt_service.dart (v5) geladen
+# --------------------------------------------------------
+# Jede Regel besteht aus:
+#   trigger      – snake_case Name des Events (siehe _camelToSnake in GptService)
+#   mode         – online | offline | hybrid  (falls leer => Settings entscheidet)
+#   prompt       – System‑Prompt für GPT (Platzhalter:  {{field}})
+#   avatar_react – none | celebrate | sad | speak(<text>)
+#
+# Platzhalter stehen in doppelt geschweiften Klammern und werden durch
+# jsonEncode(evt) → Map‑Schlüssel ersetzt.
+
+- trigger: meal_analyzed_event
+  mode: online
+  prompt: |
+    Das Kind hat soeben eine Mahlzeit mit {{totalCarbs}} g Kohlenhydraten erfasst.
+    Erkläre in zwei Sätzen, warum die geschätzte KH‑Menge sinnvoll sein könnte
+    und gib einen kurzen Tipp zur genaueren Schätzung.
+  avatar_react: celebrate
+
+- trigger: meal_warning_event
+  mode: online
+  prompt: |
+    Folgende Warnungen wurden erkannt: {{warnings}}.
+    Formuliere eine kindgerechte Rückmeldung, wie die Mahlzeit verbessert
+    werden kann, in höchstens drei Sätzen.
+  avatar_react: sad
+
+- trigger: speech_input_failed_event
+  mode: offline
+  avatar_react: speak(Versuch es bitte noch einmal. Ich habe dich nicht verstanden.)
+
+- trigger: image_input_failed_event
+  mode: offline
+  avatar_react: sad
+
+- trigger: bolus_calculated_event
+  mode: online
+  prompt: |
+    Es wurde eine Bolus‑Empfehlung berechnet:
+      • KH: {{carbs}} g
+      • Insulin: {{units}} U
+      • Ratio: {{ratio}}
+    Gib eine sehr kurze Rückfrage (max. 20 Wörter), wenn die Menge ungewöhnlich
+    erscheint – ansonsten ein Lob.
+  avatar_react: speak(Überprüfe bitte die vorgeschlagene Insulinmenge.)
+
+- trigger: parent_log_event
+  mode: offline
+  avatar_react: none
