@@ -51,6 +51,8 @@ dependencies:
   yaml: ^3.1.2
   lottie: ^3.3.1
   fl_chart: ^0.66.0
+  rate_limiter: ^1.1.0
+  async: ^2.11.0
 
   # Basics
   path: any

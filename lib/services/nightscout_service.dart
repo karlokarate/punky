@@ -21,6 +21,8 @@ import 'settings_service.dart';
 import '../services/nightscout_models.dart';
 import '../events/app_events.dart';
 import '../core/event_bus.dart';
+import '../network/request_limiter.dart';
+import 'package:async/async.dart' show Mutex;
 
 /// ---------------------------------------------------------------------------
 /// Hilfs‑Extension: hübsches Trend‑Symbol
@@ -70,6 +72,12 @@ class NightscoutService extends ChangeNotifier {
 
   Timer? _pollTimer;
 
+  // ───────── Limiting & Bundling ─────────
+  final ApiRateLimiter _limiter = ApiRateLimiter.I;
+  final _uploadMutex = Mutex();
+  final _pendingTreatments = <Map<String, dynamic>>[];
+  Timer? _flushTimer;
+
   /* ---------------------- Initialisierung -------------------------------- */
   Future<void> _init(SettingsService settings) async {
     if (_pollTimer != null) return; // bereits init
@@ -82,6 +90,9 @@ class NightscoutService extends ChangeNotifier {
         : AppFlavor.standalone;
 
     _startPolling();
+
+    _flushTimer ??=
+        Timer.periodic(const Duration(seconds: 30), (_) => _flushTreatments());
   }
 
   bool get isPlugin => _flavor == AppFlavor.plugin;
@@ -95,17 +106,19 @@ class NightscoutService extends ChangeNotifier {
           .map((e) => GlucoseEntry.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
-    final uri = Uri.parse(
-        '${_baseUrl()}/api/v1/entries.json?count=$count&find[device]=Dexcom');
-    final resp = await http.get(uri, headers: _headers());
-    if (resp.statusCode != 200) {
-      throw Exception('Nightscout ${resp.statusCode}');
-    }
-    final list = jsonDecode(resp.body);
-    return list
-        .map<GlucoseEntry>(
-            (e) => GlucoseEntry.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    return _limiter.exec(() async {
+      final uri = Uri.parse(
+          '${_baseUrl()}/api/v1/entries.json?count=$count&find[device]=Dexcom');
+      final resp = await http.get(uri, headers: _headers());
+      if (resp.statusCode != 200) {
+        throw Exception('Nightscout ${resp.statusCode}');
+      }
+      final list = jsonDecode(resp.body);
+      return list
+          .map<GlucoseEntry>(
+              (e) => GlucoseEntry.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    });
   }
 
   Future<List<Treatment>> fetchTreatments({int count = 10}) async {
@@ -116,16 +129,18 @@ class NightscoutService extends ChangeNotifier {
           .map((e) => Treatment.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
-    final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json?count=$count');
-    final resp = await http.get(uri, headers: _headers());
-    if (resp.statusCode != 200) {
-      throw Exception('Nightscout ${resp.statusCode}');
-    }
-    final list = jsonDecode(resp.body);
-    return list
-        .map<Treatment>(
-            (e) => Treatment.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    return _limiter.exec(() async {
+      final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json?count=$count');
+      final resp = await http.get(uri, headers: _headers());
+      if (resp.statusCode != 200) {
+        throw Exception('Nightscout ${resp.statusCode}');
+      }
+      final list = jsonDecode(resp.body);
+      return list
+          .map<Treatment>(
+              (e) => Treatment.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    });
   }
 
   Future<DeviceStatus?> fetchDeviceStatus() async {
@@ -135,12 +150,14 @@ class NightscoutService extends ChangeNotifier {
           ? DeviceStatus.fromJson(Map<String, dynamic>.from(map))
           : null;
     }
-    final uri = Uri.parse('${_baseUrl()}/api/v1/devicestatus.json?count=1');
-    final resp = await http.get(uri, headers: _headers());
-    if (resp.statusCode != 200) return null;
-    final List list = jsonDecode(resp.body);
-    if (list.isEmpty) return null;
-    return DeviceStatus.fromJson(Map<String, dynamic>.from(list.first));
+    return _limiter.exec(() async {
+      final uri = Uri.parse('${_baseUrl()}/api/v1/devicestatus.json?count=1');
+      final resp = await http.get(uri, headers: _headers());
+      if (resp.statusCode != 200) return null;
+      final List list = jsonDecode(resp.body);
+      if (list.isEmpty) return null;
+      return DeviceStatus.fromJson(Map<String, dynamic>.from(list.first));
+    });
   }
 
   Future<DeviceStatus?> fetchLoopStatus() => fetchDeviceStatus();
@@ -150,15 +167,8 @@ class NightscoutService extends ChangeNotifier {
       await _nsBridge.invokeMethod('uploadTreatment', payload);
       return;
     }
-    final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json');
-    final resp = await http.post(
-      uri,
-      headers: _headers(contentType: true),
-      body: jsonEncode(payload),
-    );
-    if (resp.statusCode >= 400) {
-      throw Exception('Upload failed: ${resp.statusCode} ${resp.body}');
-    }
+    if (payload.isEmpty || _settings.nightscoutUrl.isEmpty) return;
+    await _uploadMutex.protect(() => _pendingTreatments.add(payload));
   }
 
   /* ==================== Öffentliche API (NEU) ============================ */
@@ -174,17 +184,19 @@ class NightscoutService extends ChangeNotifier {
       return ok;
     }
 
-    final uri = Uri.parse('${_baseUrl()}/api/v1/profile');
-    final resp = await http.post(
-      uri,
-      headers: _headers(contentType: true),
-      body: jsonEncode(patch),
-    );
-    final ok = resp.statusCode == 200;
-    if (ok) {
-      _log('Profil‑Patch hochgeladen');
-    }
-    return ok;
+    return _limiter.exec(() async {
+      final uri = Uri.parse('${_baseUrl()}/api/v1/profile');
+      final resp = await http.post(
+        uri,
+        headers: _headers(contentType: true),
+        body: jsonEncode(patch),
+      );
+      final ok = resp.statusCode == 200;
+      if (ok) {
+        _log('Profil‑Patch hochgeladen');
+      }
+      return ok;
+    });
   }
 
   ///  2️⃣ Durchschnitt berechnen (optional; wird im Parent‑Screen direkt berechnet,
@@ -217,15 +229,17 @@ class NightscoutService extends ChangeNotifier {
     }
 
     if (_settings.nightscoutUrl.isEmpty) return false;
-    final uri = Uri.parse('${_baseUrl()}/api/v1/treatments');
-    final resp = await http.post(
-      uri,
-      headers: _headers(contentType: true),
-      body: jsonEncode({'action': 'approve-last-bolus'}),
-    );
-    final ok = resp.statusCode == 200;
-    if (ok) _log('Bolus freigegeben');
-    return ok;
+    return _limiter.exec(() async {
+      final uri = Uri.parse('${_baseUrl()}/api/v1/treatments');
+      final resp = await http.post(
+        uri,
+        headers: _headers(contentType: true),
+        body: jsonEncode({'action': 'approve-last-bolus'}),
+      );
+      final ok = resp.statusCode == 200;
+      if (ok) _log('Bolus freigegeben');
+      return ok;
+    });
   }
 
   /* ==================== Polling / Cache‑Updates ========================= */
@@ -256,6 +270,31 @@ class NightscoutService extends ChangeNotifier {
     } catch (_) {/* ignore */}
   }
 
+  Future<void> _flushTreatments() async {
+    if (_pendingTreatments.isEmpty) return;
+    late final List<Map<String, dynamic>> batch;
+    await _uploadMutex.protect(() {
+      batch = List<Map<String, dynamic>>.from(_pendingTreatments);
+      _pendingTreatments.clear();
+    });
+
+    await _limiter.exec(() async {
+      final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json');
+      final resp = await http.post(
+        uri,
+        headers: _headers(contentType: true),
+        body: jsonEncode(batch),
+      );
+      if (resp.statusCode >= 400) {
+        await _uploadMutex
+            .protect(() => _pendingTreatments.insertAll(0, batch));
+        throw Exception('NS upload failed ${resp.statusCode}');
+      } else {
+        _log('Nightscout: ${batch.length} Treatments hochgeladen');
+      }
+    });
+  }
+
   void _log(String msg) {
     final evt = ParentLogEvent(message: msg, timestamp: DateTime.now());
     parentLog.add(evt);
@@ -279,6 +318,7 @@ class NightscoutService extends ChangeNotifier {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _flushTimer?.cancel();
     super.dispose();
   }
 }
