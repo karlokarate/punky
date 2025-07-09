@@ -26,14 +26,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 import '../events/app_events.dart';
 import 'settings_service.dart';
-import 'gpt_service.dart';
 
 class ImageInputStartedEvent {}
 class ImageInputFinishedEvent {

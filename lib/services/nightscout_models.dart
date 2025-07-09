@@ -15,21 +15,28 @@ import 'package:meta/meta.dart';
 class GlucoseEntry {
   final DateTime time;
   final double value;
+  final int? trend;
 
-  const GlucoseEntry({required this.time, required this.value});
+  const GlucoseEntry({required this.time, required this.value, this.trend});
 
   factory GlucoseEntry.fromJson(Map<String, dynamic> json) {
     final rawTime = json['dateString'] ?? json['date'] ?? json['dateTime'];
     return GlucoseEntry(
       time: DateTime.parse(rawTime as String),
       value: (json['sgv'] as num?)?.toDouble() ?? 0,
+      trend: (json['trend'] as num?)?.toInt(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'dateString': time.toIso8601String(),
-    'sgv': value,
-  };
+        'dateString': time.toIso8601String(),
+        'sgv': value,
+        if (trend != null) 'trend': trend,
+      };
+
+  /// Convenience getters used throughout the code base.
+  DateTime get date => time;
+  double get sgv => value;
 
   static List<GlucoseEntry> listFromJson(List<dynamic> list) =>
       list.map((e) => GlucoseEntry.fromJson(e)).toList();
