@@ -1,23 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.untitled1">
+    package="com.example.punky">
 
-    <!-- 📩 SMS-Empfang -->
+    <!-- ─────────── Berechtigungen ─────────── -->
+
+    <!-- SMS -->
     <uses-permission android:name="android.permission.RECEIVE_SMS"/>
     <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
 
-    <!-- 🎙️ Mikrofonberechtigung für Vosk -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Mikrofon (Spracheingabe: Vosk, Whisper) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
+    <!-- Internet (API, Push, Nightscout) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- Kamera (z. B. Lebensmittel-Scan) -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- Dateisystem (Modelle, Bilder, Zwischenspeicher) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Alarme -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <!-- Android 13+: Benachrichtigungen -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- ─────────── Optionale Hardware (Lint-Fix) ─────────── -->
+    <uses-feature android:name="android.hardware.telephony" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
+
+    <!-- ─────────── App & Einstiegspunkt ─────────── -->
     <application
-        android:label="untitled1"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:label="Punky"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:allowBackup="true"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/LaunchTheme">
 
+
+    <!-- Flutter-Hauptactivity -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.punky.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -28,29 +62,16 @@
                 android:resource="@style/NormalTheme" />
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- Flutter v2 API aktiv -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- 📡 SMS-Receiver -->
-        <receiver android:name=".SmsReceiver" android:exported="true">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
-
     </application>
 
-    <!-- 🔍 Optional für Textverarbeitung durch andere Apps -->
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
-    </queries>
 </manifest>

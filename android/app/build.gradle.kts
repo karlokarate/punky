@@ -1,39 +1,34 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("org.jetbrains.kotlin.android")
+    // Der Flutter‑Gradle‑Plugin MUSS nach Android‑ & Kotlin‑Plugins kommen
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.example.untitled1"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
+    namespace  = "com.example.untitled1"          // ⇨ bei Bedarf anpassen
+    compileSdk = 34
+    ndkVersion = flutter.ndkVersion               // aus Flutter‑Tools
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.untitled1"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        applicationId = "com.example.untitled1"   // ⇨ bei Bedarf anpassen
+        minSdk       = flutter.minSdkVersion
+        targetSdk    = 34
+        versionCode  = flutter.versionCode
+        versionName  = flutter.versionName
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+        getByName("release") {
+            // TODO: eigenes Keystore‑Config hinterlegen
             signingConfig = signingConfigs.getByName("debug")
         }
     }

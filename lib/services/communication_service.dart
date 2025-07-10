@@ -1,5 +1,5 @@
 /*
- *  communication_service.dart   (v4.0 – mit Limiter & Retry)
+ *  communication_service.dart   (v4.1 – mit Limiter, Retry & SMS‑Permission‑Fix)
  *  ---------------------------------------------------------------------------
  *  Vereinheitlichte Messaging‑Ebene (Push + SMS + Offline‑Queue)
  *
@@ -8,6 +8,7 @@
  *   • Payload‑Router für Settings, Punkte, Profile‑Empfehlungen
  *   • Token‑Handling, SMS‑Eingang, Offline‑Warteschlange
  *   • Limiter-Unterstützung über GlobalRateLimiter (Channel: 'push')
+ *   • Android 13+ SMS-Permission-Fix (SecurityException verhindert)
  *
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
@@ -21,6 +22,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:telephony/telephony.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../core/app_initializer.dart';
 import '../core/event_bus.dart';
@@ -56,23 +58,35 @@ class CommunicationService {
     }
 
     if (SettingsService.I.enableSms && flavor != AppFlavor.plugin) {
-      final telephony = Telephony.instance;
-      final bool? granted = await telephony.requestSmsPermissions;
-      if (granted == true) {
-        telephony.listenIncomingSms(
-          onNewMessage: _handleIncomingSms,
-          onBackgroundMessage: _smsBgHandler,
-        );
-        SmsService.instance.onJsonSms.listen((PushMessage msg) {
-          if (!_handlePayload(msg.data)) {
-            AlarmManager.I.fireAlarm(
-              title: 'Unverarbeitbare SMS‑Payload',
-              body: msg.data.toString(),
-            );
-          }
-        });
+      final granted = await _checkAndRequestSmsPermission();
+      if (!granted) {
+        debugPrint('❌ SMS-Permission verweigert – kein Listener aktiv');
+        return;
       }
+
+      final telephony = Telephony.instance;
+      telephony.listenIncomingSms(
+        onNewMessage: _handleIncomingSms,
+        onBackgroundMessage: _smsBgHandler,
+      );
+
+      SmsService.instance.onJsonSms.listen((PushMessage msg) {
+        if (!_handlePayload(msg.data)) {
+          AlarmManager.I.fireAlarm(
+            title: 'Unverarbeitbare SMS‑Payload',
+            body: msg.data.toString(),
+          );
+        }
+      });
     }
+  }
+
+  /// Android 13+ SMS-Permission zur Laufzeit prüfen
+  Future<bool> _checkAndRequestSmsPermission() async {
+    final status = await Permission.sms.status;
+    if (status.isGranted) return true;
+    final result = await Permission.sms.request();
+    return result.isGranted;
   }
 
   /// Initialisiert FCM-Listener, registriert Token
