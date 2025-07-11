@@ -1,38 +1,32 @@
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("dev.flutter.flutter-gradle-plugin")
-}
+buildscript {
 
-android {
-    namespace = "com.example.punky"
-    compileSdk = 34
-    ndkVersion = flutter.ndkVersion
-
-    defaultConfig {
-        applicationId = "com.example.punky"
-        minSdk = flutter.minSdkVersion
-        targetSdk = 34
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+    repositories {
+        google()
+        mavenCentral()
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    buildTypes {
-        getByName("release") {
-            signingConfig = signingConfigs.getByName("debug")
-        }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.4.2")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.21")
+        // Optional – falls Firebase etc. gebraucht
+        // classpath("com.google.gms:google-services:4.3.15")
     }
 }
 
-flutter {
-    source = "../"
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = file("build") // ✅ relativer Pfad zum Flutter-Root
+
+subprojects {
+    project.buildDir = file("${rootProject.buildDir}/${project.name}")
+    evaluationDependsOn(":app")
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.buildDir)
 }
