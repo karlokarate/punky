@@ -32,16 +32,26 @@ class AAPSBridge {
    * Öffentliche Aufrufe
    * ────────────────────────────────────────── */
 
+
   Future<void> sendCarbEntry({
     required double carbs,
     required DateTime time,
     required String note,
   }) async {
+    await channel.invokeMethod('sendCarbEntry', {
+      'carbs': carbs,
+      'time': time.toIso8601String(),
     await _channel.invokeMethod('addCarbs', {
       'carbs': carbs,
       'timestamp': time.millisecondsSinceEpoch,
       'note': note,
     });
+  }
+
+
+  Future<double?> getInsulinRatio() async {
+    final ratio = await channel.invokeMethod<double>('getInsulinRatio');
+    return ratio;
   }
 
   Future<double?> getCurrentBG() async {
@@ -76,6 +86,9 @@ class AAPSBridge {
     required String title,
     required String body,
     required String level,
+    bool silent = false,
+  }) async {
+    await channel.invokeMethod('invokeAlarm', {
     required bool silent,
   }) async {
     await _channel.invokeMethod('fireAlarm', {

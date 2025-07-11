@@ -21,7 +21,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/settings_service.dart';

@@ -12,7 +12,8 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
 import '../services/aaps_bridge.dart';
 import '../services/push_service.dart';
 

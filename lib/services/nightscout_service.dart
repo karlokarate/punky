@@ -16,7 +16,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:synchronized/synchronized.dart';
 
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
 import 'settings_service.dart';
 import 'aaps_bridge.dart';
 import 'nightscout_models.dart';
@@ -70,7 +71,7 @@ class NightscoutService extends ChangeNotifier {
 
   Future<List<GlucoseEntry>> fetchGlucose({int count = 12}) async {
     if (isPlugin) {
-      final raw = await appCtx.aapsBridge._channel.invokeMethod('getEntries', {'count': count});
+      final raw = await appCtx.aapsBridge.channel.invokeMethod('getEntries', {'count': count});
       final list = List<Map<String, dynamic>>.from(raw);
       return list.map(GlucoseEntry.fromJson).toList();
     }
@@ -86,7 +87,7 @@ class NightscoutService extends ChangeNotifier {
 
   Future<List<Treatment>> fetchTreatments({int count = 10}) async {
     if (isPlugin) {
-      final raw = await appCtx.aapsBridge._channel.invokeMethod('getTreatments', {'count': count});
+      final raw = await appCtx.aapsBridge.channel.invokeMethod('getTreatments', {'count': count});
       final list = List<Map<String, dynamic>>.from(raw);
       return list.map(Treatment.fromJson).toList();
     }
@@ -102,7 +103,7 @@ class NightscoutService extends ChangeNotifier {
 
   Future<DeviceStatus?> fetchDeviceStatus() async {
     if (isPlugin) {
-      final raw = await appCtx.aapsBridge._channel.invokeMethod('getDeviceStatus');
+      final raw = await appCtx.aapsBridge.channel.invokeMethod('getDeviceStatus');
       return raw != null ? DeviceStatus.fromJson(Map<String, dynamic>.from(raw)) : null;
     }
 
@@ -120,7 +121,7 @@ class NightscoutService extends ChangeNotifier {
 
   Future<void> uploadTreatment(Map<String, dynamic> payload) async {
     if (isPlugin) {
-      await appCtx.aapsBridge._channel.invokeMethod('uploadTreatment', payload);
+      await appCtx.aapsBridge.channel.invokeMethod('uploadTreatment', payload);
       return;
     }
     if (payload.isEmpty || _settings.nightscoutUrl.isEmpty) return;
@@ -131,7 +132,7 @@ class NightscoutService extends ChangeNotifier {
     if (patch.isEmpty || _settings.nightscoutUrl.isEmpty) return false;
 
     if (isPlugin) {
-      final ok = await appCtx.aapsBridge._channel.invokeMethod('uploadProfilePatch', patch) ?? false;
+      final ok = await appCtx.aapsBridge.channel.invokeMethod('uploadProfilePatch', patch) ?? false;
       if (ok) _log('Profil‑Patch (Plugin) hochgeladen');
       return ok;
     }
@@ -165,7 +166,7 @@ class NightscoutService extends ChangeNotifier {
 
   Future<bool> authorizePendingBolus() async {
     if (isPlugin) {
-      final ok = await appCtx.aapsBridge._channel.invokeMethod('authorizeBolus') ?? false;
+      final ok = await appCtx.aapsBridge.channel.invokeMethod('authorizeBolus') ?? false;
       if (ok) _log('Bolus freigegeben (Plugin)');
       return ok;
     }

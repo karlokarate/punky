@@ -21,7 +21,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:vosk_flutter/vosk_flutter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
 import '../events/app_events.dart';
 import '../services/text_parser.dart';
 import 'settings_service.dart';
@@ -183,7 +183,7 @@ class SpeechService {
 
   Future<void> _speak(String text) async {
     try {
-      await appCtx.aapsBridge._channel.invokeMethod('speak', {
+      await appCtx.aapsBridge.channel.invokeMethod('speak', {
         'text': text,
         'lang': 'de',
       });

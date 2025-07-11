@@ -1,3 +1,5 @@
+/// Central container for all globally accessible services.
+class AppContext {
 // lib/core/app_context.dart
 //
 // v1 – FINAL SYNCED CONTEXT
@@ -59,6 +61,33 @@ class AppContext {
     required this.nightscoutService,
     required this.mealAnalyzer,
     required this.carbSync,
+    required this.recommendationHistoryService,
+    required this.communicationService,
+    required this.alarmManager,
+  });
+
+  final AppFlavor flavor;
+  final Database db;
+  final AppEventBus bus;
+  final SettingsService settings;
+  final AAPSBridge aapsBridge;
+  final PushService pushService;
+  final SmsService smsService;
+  final AvatarService avatarService;
+  final GamificationService gamificationService;
+  final GptService gptService;
+  final ImageInputService imageInputService;
+  final SpeechService speechService;
+  final NightscoutService nightscoutService;
+  final MealAnalyzer mealAnalyzer;
+  final AapsCarbSyncService carbSync;
+  final RecommendationHistoryService recommendationHistoryService;
+  final CommunicationService communicationService;
+  final AlarmManager alarmManager;
+}
+
+/// Global reference set in [AppInitializer].
+late AppContext appCtx;
   });
 
   Future<void> dispose() async {
