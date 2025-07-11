@@ -14,7 +14,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
 import '../services/push_service.dart';
 
 class SmsService {
@@ -36,7 +36,7 @@ class SmsService {
   /// Sendet strukturierte JSON-SMS via Plugin-Brücke.
   Future<bool> sendJsonSms(PushMessage msg) async {
     try {
-      await appCtx.aapsBridge._channel.invokeMethod('sendJsonSms', msg.toMap());
+      await appCtx.aapsBridge.channel.invokeMethod('sendJsonSms', msg.toMap());
       debugPrint('[SmsService] SMS erfolgreich gesendet');
       return true;
     } catch (e) {

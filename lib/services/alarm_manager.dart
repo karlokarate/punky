@@ -15,7 +15,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:vibration/vibration.dart';
 import 'package:just_audio/just_audio.dart';
 
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import 'settings_service.dart';

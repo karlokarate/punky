@@ -19,7 +19,7 @@ import '../events/app_events.dart';
 import '../services/aaps_bridge.dart';
 import '../services/nightscout_service.dart';
 import '../services/settings_service.dart';
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
 
 class BolusEngine {
   static final BolusEngine I = BolusEngine._();

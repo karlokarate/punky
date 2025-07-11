@@ -14,7 +14,7 @@ import '../event_bus.dart';
 import '../events/app_events.dart';
 import '../services/gpt_analysis_service.dart';
 import '../services/nightscout_service.dart';
-import '../recommendation_history_service.dart';
+import '../services/recommendation_history_service.dart';
 import '../services/settings_service.dart';
 import '../widgets/pin_guard.dart';
 import '../services/nightscout_models.dart';

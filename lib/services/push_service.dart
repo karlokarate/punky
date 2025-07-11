@@ -19,7 +19,7 @@ import 'fcm_service.dart';
 import 'sms_service.dart';
 import 'settings_service.dart';
 import 'communication_service.dart';
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
 import '../services/aaps_bridge.dart';
 import '../network/global_rate_limiter.dart';
 
@@ -81,7 +81,7 @@ class PushService {
   Future<void> send(PushMessage msg) async {
     await GlobalRateLimiter.I.exec('push', () async {
       try {
-        await appCtx.aapsBridge._channel.invokeMethod(
+        await appCtx.aapsBridge.channel.invokeMethod(
           'sendAapsNotification',
           msg.toMap(),
         );

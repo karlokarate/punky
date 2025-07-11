@@ -11,7 +11,7 @@
 import 'package:flutter/material.dart';
 import 'core/app_initializer.dart';
 import 'core/app_router.dart';
-import 'services/app_context.dart';
+import 'core/app_context.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +23,7 @@ void main() async {
       : AppFlavor.standalone;
 
   // Initialisiere Services, EventBus, Storage usw.
-  final appCtx = await AppInitializer.init(flavor: flavor);
+  appCtx = await AppInitializer.init(flavor: flavor);
 
   // Globaler Error-Handler
   FlutterError.onError = (details) {

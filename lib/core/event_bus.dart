@@ -15,7 +15,7 @@ import 'dart:async';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/services.dart';
 
-import '../core/app_initializer.dart';
+import 'app_flavor.dart';
 import '../events/app_events.dart';
 
 class AppEventBus {

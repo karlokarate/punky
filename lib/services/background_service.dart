@@ -18,7 +18,8 @@ import 'package:event_bus/event_bus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/nightscout_service.dart';

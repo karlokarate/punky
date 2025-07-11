@@ -17,7 +17,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/app_initializer.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
 import '../events/app_events.dart';
 import '../event_bus.dart';
 
@@ -227,7 +228,7 @@ class SettingsService extends ChangeNotifier {
 
     if (flavor == AppFlavor.plugin && mirrorKey != null) {
       try {
-        await appCtx.aapsBridge._channel.invokeMethod('setPref', {
+        await appCtx.aapsBridge.channel.invokeMethod('setPref', {
           'key': mirrorKey,
           'value': value,
         });

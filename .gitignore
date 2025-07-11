@@ -50,3 +50,6 @@ app.*.map.json
 # Nur gezielte Logs ausschließen, nicht alle .log-Dateien
 flutter_01.log
 debug.log
+
+# L10n generated files
+lib/l10n/gen_l10n/
