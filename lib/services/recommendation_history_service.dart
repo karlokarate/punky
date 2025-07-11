@@ -1,16 +1,14 @@
 // lib/services/recommendation_history_service.dart
 //
-// v2 – Therapie‑Empfehlungs‑Archiv (Hive‑basiert)
+// v3 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// GPT- & Nightscout-Empfehlungsarchiv (lokal, Hive-basiert)
+// • CRUD-API für Empfehlungen (Datum + Liste)
+// • Auto-Pruning auf max. 200 Einträge
+// • JSON-Export + Import
+// • Kompatibel mit Provider & ChangeNotifier
 //
-// ▸ Aufgaben
-//   • Persistiert alle GPT‑/Nightscout‑Empfehlungen lokal in Hive.
-//   • Kapselt CRUD‑Methoden + Export/Import + Auto‑Pruning.
-//   • ChangeNotifier → Widgets können `context.watch<RecommendationHistoryService>()`
-//     nutzen, um sofortige UI‑Aktualisierungen zu erhalten.
-//   • Höchst‑Performance: Lazy‑Load in Memory‑Cache; Box wird nur bei
-//     Schreib‑Operationen berührt.
-//
-// ---------------------------------------------------------------------------
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'dart:convert';
 
@@ -20,11 +18,10 @@ import 'package:path_provider/path_provider.dart';
 
 class RecommendationHistoryService extends ChangeNotifier {
   RecommendationHistoryService._();
-  static final RecommendationHistoryService i =
-      RecommendationHistoryService._();
+  static final RecommendationHistoryService i = RecommendationHistoryService._();
 
   static const _boxName = 'recommendation_history';
-  static const _maxEntries = 200;       // Auto‑Pruning‑Limit
+  static const _maxEntries = 200;
 
   late Box _box;
   final List<Map<String, dynamic>> _cache = [];
@@ -40,12 +37,12 @@ class RecommendationHistoryService extends ChangeNotifier {
     Hive.init(dir.path);
     _box = await Hive.openBox(_boxName);
 
-    // Cache aufbauen (ältest → neu)
     _cache
       ..clear()
       ..addAll(
         _box.values
-            .map((e) => Map<String, dynamic>.from(e as Map))
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
             .toList(),
       );
     _ready = true;
@@ -67,24 +64,21 @@ class RecommendationHistoryService extends ChangeNotifier {
     _cache.add(entry);
     await _box.add(entry);
 
-    // Auto‑Pruning
     if (_cache.length > _maxEntries) {
       final overflow = _cache.length - _maxEntries;
       _cache.removeRange(0, overflow);
-      await _box.deleteAt(0); // nur 1 Item pro Aufruf entfernen
+      for (int i = 0; i < overflow; i++) {
+        if (_box.length > i) await _box.deleteAt(i);
+      }
     }
 
     notifyListeners();
   }
 
-  /// Gibt das komplette Archiv zurück (älteste → neueste).
   List<Map<String, dynamic>> getHistory() => List.unmodifiable(_cache);
 
-  /// Neueste Empfehlung (oder null)
-  Map<String, dynamic>? get latest =>
-      _cache.isNotEmpty ? _cache.last : null;
+  Map<String, dynamic>? get latest => _cache.isNotEmpty ? _cache.last : null;
 
-  /// Löscht das komplette Archiv.
   Future<void> clear() async {
     await _box.clear();
     _cache.clear();
@@ -93,10 +87,8 @@ class RecommendationHistoryService extends ChangeNotifier {
 
   /* ───────────────────────── Export / Import ───────────────────────── */
 
-  /// Exportiert als JSON‑String.
   String exportJson() => jsonEncode(_cache);
 
-  /// Importiert (überschreibt) aus JSON‑String.
   Future<void> importJson(String json) async {
     final List list = jsonDecode(json);
     await _box.clear();

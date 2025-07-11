@@ -1,13 +1,14 @@
-/*
- *  bolus_engine.dart  (v4 – fixed)
- *  --------------------------------------------------------------
- *  Berechnet Bolus auf Basis KH, abhängig vom Betriebsmodus (AAPS/Standalone)
- *  Nutzt AapsLogicPort → getInsulinRatio(), recommendBolus()
- *  Nutzt NightscoutService → fetchTreatments(), uploadTreatment()
- *  Gibt Event: BolusCalculatedEvent
- *
- *  © 2025 Kids Diabetes Companion – GPL​-3.0​-or​later
- */
+// lib/services/bolus_engine.dart
+//
+// v5 – BRIDGE READY
+// --------------------------------------------------------------
+// Berechnet Bolus basierend auf KH, abhängig vom Betriebsmodus:
+// • Plugin-Modus: ruft getInsulinRatio() über AAPSBridge
+// • Standalone: verwendet SettingsService
+// • Liefert BolusCalculatedEvent via EventBus
+// • Optionaler Upload ins Nightscout-Treatment
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/widgets.dart';
@@ -15,9 +16,10 @@ import 'package:flutter/widgets.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
-import 'aaps_logic_port.dart';
-import 'nightscout_service.dart';
-import 'settings_service.dart';
+import '../services/aaps_bridge.dart';
+import '../services/nightscout_service.dart';
+import '../services/settings_service.dart';
+import '../core/app_initializer.dart';
 
 class BolusEngine {
   static final BolusEngine I = BolusEngine._();
@@ -39,10 +41,16 @@ class BolusEngine {
     final isPlugin = _ns.isPlugin;
 
     if (isPlugin) {
-      ratio = await AapsLogicPort.getInsulinRatio();
-      if (ratio != null && ratio > 0) {
-        units = carbs / ratio;
-        reason = loc.bolusReasonAaps(ratio.toStringAsFixed(1));
+      try {
+        ratio = await appCtx.aapsBridge
+            .getInsulinRatio(); // z. B. 12g/IE aus Profil
+        if (ratio != null && ratio > 0) {
+          units = carbs / ratio;
+          reason = loc.bolusReasonAaps(ratio.toStringAsFixed(1));
+        }
+      } catch (_) {
+        reason = loc.bolusErrorBridge;
+        ratio = null;
       }
     } else {
       ratio = _settings.insulinRatio;
@@ -69,13 +77,25 @@ class BolusEngine {
     ));
   }
 
-  /// Optionaler Bolus​-Upload (Standalone → NS-Treatment)
-  Future<void> deliverBolus(double units, double carbs, BuildContext context) async {
+  /// Optionaler Bolus-Upload (Standalone → NS-Treatment)
+  Future<void> deliverBolus(
+      double units,
+      double carbs,
+      BuildContext context,
+      ) async {
     final loc = AppLocalizations.of(context);
     final isPlugin = _ns.isPlugin;
 
     if (isPlugin) {
-      // TODO: Optionaler Trigger für AAPS-Execution
+      try {
+        await appCtx.aapsBridge.sendCarbEntry(
+          carbs: carbs,
+          time: DateTime.now(),
+          note: loc.bolusNoteBridge(units.toStringAsFixed(1)),
+        );
+      } catch (_) {
+        // ggf. Logging oder Fallback-Info
+      }
     } else {
       final treatment = {
         "eventType": "Meal Bolus",

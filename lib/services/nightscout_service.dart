@@ -1,21 +1,25 @@
-/*
- *  nightscout_service.dart (v6 – GlobalRateLimiter integriert)
- *  --------------------------------------------------------------
- *  Verwendet GlobalRateLimiter für alle API-Calls ("nightscout")
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
- */
+// lib/services/nightscout_service.dart
+//
+// v7 – BRIDGE READY & VALIDATED
+// --------------------------------------------------------------
+// • ersetzt _nsBridge durch appCtx.aapsBridge
+// • Plugin-Modus nutzt Flutter <-> AAPSBridge vollständig
+// • Standalone-Modus nutzt Nightscout REST + GlobalRateLimiter
+// • persistente Logik, Profilpatch, Glukose-Cache, Bolus-Approval
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:synchronized/synchronized.dart';
 
 import '../core/app_initializer.dart';
 import 'settings_service.dart';
-import '../services/nightscout_models.dart';
+import 'aaps_bridge.dart';
+import 'nightscout_models.dart';
 import '../events/app_events.dart';
 import '../core/event_bus.dart';
 import '../network/global_rate_limiter.dart';
@@ -23,8 +27,16 @@ import '../network/global_rate_limiter.dart';
 extension GlucoseTrendArrow on GlucoseEntry {
   String get trendArrow {
     const map = {
-      0: '⇼', 1: '↓↓', 2: '↘', 3: '→', 4: '↗',
-      5: '↑', 6: '↑↑', 7: '✶', 8: '↜', 9: '↝'
+      0: '⇼',
+      1: '↓↓',
+      2: '↘',
+      3: '→',
+      4: '↗',
+      5: '↑',
+      6: '↑↑',
+      7: '✶',
+      8: '↜',
+      9: '↝'
     };
     return map[trend] ?? '';
   }
@@ -34,19 +46,8 @@ class NightscoutService extends ChangeNotifier {
   NightscoutService._();
   static final NightscoutService instance = NightscoutService._();
 
-  factory NightscoutService(SettingsService settings) {
-    instance._init(settings);
-    return instance;
-  }
-
-// öffentliche Initialisierungsmethode (z. B. für AppInitializer)
-  Future<void> init(SettingsService settings) async => _init(settings);
-
-
   late final SettingsService _settings;
   late final AppFlavor _flavor;
-  static const MethodChannel _nsBridge = MethodChannel('kidsapp/ns_bridge');
-
   GlucoseEntry? currentEntry;
   List<GlucoseEntry> cachedEntries = <GlucoseEntry>[];
   final List<ParentLogEvent> parentLog = [];
@@ -56,13 +57,10 @@ class NightscoutService extends ChangeNotifier {
   final _pendingTreatments = <Map<String, dynamic>>[];
   Timer? _flushTimer;
 
-  Future<void> _init(SettingsService settings) async {
+  Future<void> init(SettingsService settings) async {
     if (_pollTimer != null) return;
     _settings = settings;
-    _flavor = const String.fromEnvironment('INTEGRATION_MODE', defaultValue: 'sa')
-        .toLowerCase().startsWith('p')
-        ? AppFlavor.plugin
-        : AppFlavor.standalone;
+    _flavor = appCtx.flavor;
 
     _startPolling();
     _flushTimer ??= Timer.periodic(const Duration(seconds: 30), (_) => _flushTreatments());
@@ -72,9 +70,11 @@ class NightscoutService extends ChangeNotifier {
 
   Future<List<GlucoseEntry>> fetchGlucose({int count = 12}) async {
     if (isPlugin) {
-      final List<dynamic> list = await _nsBridge.invokeMethod('getEntries', {'count': count});
-      return list.map((e) => GlucoseEntry.fromJson(Map<String, dynamic>.from(e))).toList();
+      final raw = await appCtx.aapsBridge._channel.invokeMethod('getEntries', {'count': count});
+      final list = List<Map<String, dynamic>>.from(raw);
+      return list.map(GlucoseEntry.fromJson).toList();
     }
+
     return GlobalRateLimiter.I.exec('nightscout', () async {
       final uri = Uri.parse('${_baseUrl()}/api/v1/entries.json?count=$count&find[device]=Dexcom');
       final resp = await http.get(uri, headers: _headers());
@@ -86,9 +86,11 @@ class NightscoutService extends ChangeNotifier {
 
   Future<List<Treatment>> fetchTreatments({int count = 10}) async {
     if (isPlugin) {
-      final List<dynamic> list = await _nsBridge.invokeMethod('getTreatments', {'count': count});
-      return list.map((e) => Treatment.fromJson(Map<String, dynamic>.from(e))).toList();
+      final raw = await appCtx.aapsBridge._channel.invokeMethod('getTreatments', {'count': count});
+      final list = List<Map<String, dynamic>>.from(raw);
+      return list.map(Treatment.fromJson).toList();
     }
+
     return GlobalRateLimiter.I.exec('nightscout', () async {
       final uri = Uri.parse('${_baseUrl()}/api/v1/treatments.json?count=$count');
       final resp = await http.get(uri, headers: _headers());
@@ -100,9 +102,10 @@ class NightscoutService extends ChangeNotifier {
 
   Future<DeviceStatus?> fetchDeviceStatus() async {
     if (isPlugin) {
-      final Map? map = await _nsBridge.invokeMethod('getDeviceStatus');
-      return map != null ? DeviceStatus.fromJson(Map<String, dynamic>.from(map)) : null;
+      final raw = await appCtx.aapsBridge._channel.invokeMethod('getDeviceStatus');
+      return raw != null ? DeviceStatus.fromJson(Map<String, dynamic>.from(raw)) : null;
     }
+
     return GlobalRateLimiter.I.exec('nightscout', () async {
       final uri = Uri.parse('${_baseUrl()}/api/v1/devicestatus.json?count=1');
       final resp = await http.get(uri, headers: _headers());
@@ -117,7 +120,7 @@ class NightscoutService extends ChangeNotifier {
 
   Future<void> uploadTreatment(Map<String, dynamic> payload) async {
     if (isPlugin) {
-      await _nsBridge.invokeMethod('uploadTreatment', payload);
+      await appCtx.aapsBridge._channel.invokeMethod('uploadTreatment', payload);
       return;
     }
     if (payload.isEmpty || _settings.nightscoutUrl.isEmpty) return;
@@ -128,7 +131,7 @@ class NightscoutService extends ChangeNotifier {
     if (patch.isEmpty || _settings.nightscoutUrl.isEmpty) return false;
 
     if (isPlugin) {
-      final ok = await _nsBridge.invokeMethod('uploadProfilePatch', patch) ?? false;
+      final ok = await appCtx.aapsBridge._channel.invokeMethod('uploadProfilePatch', patch) ?? false;
       if (ok) _log('Profil‑Patch (Plugin) hochgeladen');
       return ok;
     }
@@ -162,7 +165,7 @@ class NightscoutService extends ChangeNotifier {
 
   Future<bool> authorizePendingBolus() async {
     if (isPlugin) {
-      final bool ok = await _nsBridge.invokeMethod('authorizeBolus') ?? false;
+      final ok = await appCtx.aapsBridge._channel.invokeMethod('authorizeBolus') ?? false;
       if (ok) _log('Bolus freigegeben (Plugin)');
       return ok;
     }
@@ -199,7 +202,9 @@ class NightscoutService extends ChangeNotifier {
   Future<void> _updateTreatments() async {
     try {
       final list = await fetchTreatments(count: 50);
-      parentLog..clear()..addAll(list.map((t) => ParentLogEvent.fromTreatment(t.toJson())));
+      parentLog
+        ..clear()
+        ..addAll(list.map((t) => ParentLogEvent.fromTreatment(t.toJson())));
       notifyListeners();
     } catch (_) {/* ignore */}
   }

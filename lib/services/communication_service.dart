@@ -1,17 +1,14 @@
-/*
- *  communication_service.dart   (v4.1 – mit Limiter, Retry & SMS‑Permission‑Fix)
- *  ---------------------------------------------------------------------------
- *  Vereinheitlichte Messaging‑Ebene (Push + SMS + Offline‑Queue)
- *
- *  Features:
- *   • Öffentliche Methode sendPush(...) – sendet an FCM/APNS mit Retry + Queue
- *   • Payload‑Router für Settings, Punkte, Profile‑Empfehlungen
- *   • Token‑Handling, SMS‑Eingang, Offline‑Warteschlange
- *   • Limiter-Unterstützung über GlobalRateLimiter (Channel: 'push')
- *   • Android 13+ SMS-Permission-Fix (SecurityException verhindert)
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
- */
+// lib/services/communication_service.dart
+//
+// v4.2 – BRIDGE READY
+// ---------------------------------------------------------------------------
+// Vereinheitlichte Messaging‑Ebene (Push + SMS + Offline‑Queue)
+// • sendPush(...) mit Retry, Offline-Queue, Rate Limiter
+// • SMS-Handler mit JSON-Payload-Router
+// • Android 13+: Permission-Check für SMS
+// • Plugin-kompatibel: Alarme via AAPSBridge (invokeAlarm)
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'dart:async';
 import 'dart:convert';
@@ -31,9 +28,9 @@ import '../services/settings_service.dart';
 import '../services/alarm_manager.dart';
 import '../services/sms_service.dart';
 import '../services/push_service.dart';
+import '../services/aaps_bridge.dart';
 import '../network/global_rate_limiter.dart';
 
-/// Vereinheitlichter Kommunikationsdienst für Push/SMS
 class CommunicationService {
   CommunicationService._(this.flavor);
   static late CommunicationService I;
@@ -43,7 +40,6 @@ class CommunicationService {
   late final EventBus _bus;
   final _random = Random();
 
-  /// Initialisiert den CommunicationService für Push + SMS
   static Future<void> init(AppFlavor flavor) async {
     I = CommunicationService._(flavor);
     await I._setup();
@@ -60,7 +56,7 @@ class CommunicationService {
     if (SettingsService.I.enableSms && flavor != AppFlavor.plugin) {
       final granted = await _checkAndRequestSmsPermission();
       if (!granted) {
-        debugPrint('❌ SMS-Permission verweigert – kein Listener aktiv');
+        debugPrint('❌ SMS-Permission verweigert – kein Listener aktiv');
         return;
       }
 
@@ -72,16 +68,12 @@ class CommunicationService {
 
       SmsService.instance.onJsonSms.listen((PushMessage msg) {
         if (!_handlePayload(msg.data)) {
-          AlarmManager.I.fireAlarm(
-            title: 'Unverarbeitbare SMS‑Payload',
-            body: msg.data.toString(),
-          );
+          _raiseAlarm('Unverarbeitbare SMS‑Payload', msg.data.toString());
         }
       });
     }
   }
 
-  /// Android 13+ SMS-Permission zur Laufzeit prüfen
   Future<bool> _checkAndRequestSmsPermission() async {
     final status = await Permission.sms.status;
     if (status.isGranted) return true;
@@ -89,7 +81,6 @@ class CommunicationService {
     return result.isGranted;
   }
 
-  /// Initialisiert FCM-Listener, registriert Token
   Future<void> _initPush() async {
     final fcm = FirebaseMessaging.instance;
     await fcm.requestPermission();
@@ -102,10 +93,9 @@ class CommunicationService {
 
   Future<void> _registerToken(String t) async {
     debugPrint('FCM Token registered: $t');
-    // TODO: ggf. an Backend melden
+    // TODO: ggf. an eigenes Backend melden
   }
 
-  /// Fragt aktuellen Push-Token neu ab und registriert ihn
   Future<void> refreshToken() async {
     final t = await FirebaseMessaging.instance.getToken();
     if (t != null) await _registerToken(t);
@@ -113,11 +103,9 @@ class CommunicationService {
 
   void _onPush(RemoteMessage msg) {
     if (_handlePayload(msg.data)) return;
-    AlarmManager.I.fireAlarm(title: 'Unknown Push', body: msg.data.toString());
+    _raiseAlarm('Unknown Push', msg.data.toString());
   }
 
-  /// Sendet eine Push-Nachricht mit Titel, Body, Daten + optionalem Ziel
-  /// Bei Fehlern wird die Nachricht in die Queue gelegt
   Future<void> sendPush({
     required String title,
     required String body,
@@ -144,7 +132,6 @@ class CommunicationService {
     }
   }
 
-  /// SMS-Hintergrund-Handler (Telephony)
   static void _smsBgHandler(SmsMessage msg) =>
       CommunicationService.I._handleIncomingSms(msg);
 
@@ -152,17 +139,13 @@ class CommunicationService {
     try {
       final data = jsonDecode(msg.body ?? '{}') as Map<String, dynamic>;
       if (!_handlePayload(data)) {
-        AlarmManager.I.fireAlarm(
-          title: 'Unverarbeitbare SMS',
-          body: msg.body ?? '',
-        );
+        _raiseAlarm('Unverarbeitbare SMS', msg.body ?? '');
       }
     } catch (_) {
-      AlarmManager.I.fireAlarm(title: 'Ungültige JSON-SMS', body: msg.body ?? '');
+      _raiseAlarm('Ungültige JSON-SMS', msg.body ?? '');
     }
   }
 
-  /// Interner Payload-Router für alle Nachrichtentypen (Push + SMS)
   bool _handlePayload(Map<String, dynamic> p) {
     switch (p['type']) {
       case 'settings_update':
@@ -186,12 +169,10 @@ class CommunicationService {
     }
   }
 
-  /// Legt Push/SMS‑Payloads für späteren Retry in die Offline‑Queue
   Future<void> enqueue(Map<String, dynamic> p) async {
     await _queue.add(p);
   }
 
-  /// Versucht erneut, gescheiterte Nachrichten aus der Queue zu senden
   Future<void> flushQueue() async {
     if (_queue.isEmpty) return;
     final failed = <int>[];
@@ -212,6 +193,30 @@ class CommunicationService {
       } catch (_) {
         failed.add(i);
       }
+    }
+  }
+
+  /* ───────────────────────────────
+   * Plugin: native Alarm via Bridge
+   * ─────────────────────────────── */
+  void _raiseAlarm(String title, String body) async {
+    try {
+      if (flavor == AppFlavor.plugin) {
+        await appCtx.aapsBridge.invokeAlarm(
+          title: title,
+          body: body,
+          level: 'normal',
+          silent: false,
+        );
+      } else {
+        await AlarmManager.I.fireAlarm(
+          title: title,
+          body: body,
+          level: AlarmLevel.normal,
+        );
+      }
+    } catch (_) {
+      debugPrint('⚠️ Alarmfehler: $title');
     }
   }
 }

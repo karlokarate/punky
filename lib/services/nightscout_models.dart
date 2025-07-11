@@ -1,13 +1,11 @@
-/*
- *  nightscout_models.dart  (v2 – FINAL)
- *  --------------------------------------------------
- *  Enthält Data Transfer Objects für Nightscout-Service:
- *   – GlucoseEntry
- *   – Treatment (+ Upload-JSON)
- *   – DeviceStatus
- *
- *  © 2025 Kids Diabetes Companion – GPL-3.0-or-later
- */
+// lib/services/nightscout_models.dart
+//
+// v3 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// • DTOs für Nightscout-Glukose, Behandlungen & Geräte-Status
+// • Unterstützt toJson(), Upload, Bridge-Kommunikation
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'package:meta/meta.dart';
 
@@ -29,12 +27,11 @@ class GlucoseEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'dateString': time.toIso8601String(),
-        'sgv': value,
-        if (trend != null) 'trend': trend,
-      };
+    'dateString': time.toIso8601String(),
+    'sgv': value,
+    if (trend != null) 'trend': trend,
+  };
 
-  /// Convenience getters used throughout the code base.
   DateTime get date => time;
   double get sgv => value;
 
@@ -79,8 +76,12 @@ class Treatment {
       'created_at': time.toIso8601String(),
       'enteredBy': 'kidsapp',
     };
-    if (type.toLowerCase().contains('bolus')) json['insulin'] = amount;
-    if (type.toLowerCase().contains('carb')) json['carbs'] = amount;
+    if (type.toLowerCase().contains('bolus')) {
+      json['insulin'] = amount;
+    }
+    if (type.toLowerCase().contains('carb')) {
+      json['carbs'] = amount;
+    }
     return json;
   }
 

@@ -1,10 +1,14 @@
-/*
- *  speech_service.dart  (v7 – COMPLETE)
- *  --------------------------------------------------------------------------
- *  • Basierend auf v5 (FIXED VOSK) :contentReference[oaicite:0]{index=0}
- *  • Ergänzt: Listener auf AvatarSpeakEvent → TTS‑Bridge.
- *  • Typ‑Fehler behoben: AvatarSpeakEvent ist jetzt im Event‑Modul vorhanden.
- */
+// lib/services/speech_service.dart
+//
+// v8 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// Sprachverarbeitung (TTS, Whisper, Vosk, iOS STT)
+// • Hybrid-/Online-/Offline-Modus
+// • AvatarSpeakEvent → zentrale Bridge-TTS
+// • Aufnahme via native Plugin
+// • Ergebnis → TextParser → MealAnalyzer
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'dart:async';
 import 'dart:convert';
@@ -17,6 +21,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:vosk_flutter/vosk_flutter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
+import '../core/app_initializer.dart';
 import '../events/app_events.dart';
 import '../services/text_parser.dart';
 import 'settings_service.dart';
@@ -26,12 +31,8 @@ class SpeechService {
   SpeechService._();
   static final SpeechService instance = SpeechService._();
 
-  static const MethodChannel _micBridge   =
-  MethodChannel('kidsapp/mic');
-  static const MethodChannel _speechBridge =
-  MethodChannel('kidsapp/speech_bridge');
-  static const MethodChannel _ttsBridge    =
-  MethodChannel('kidsapp/tts');
+  static const MethodChannel _micBridge = MethodChannel('kidsapp/mic');
+  static const MethodChannel _speechBridge = MethodChannel('kidsapp/speech_bridge');
 
   late SettingsService _settings;
   late EventBus _bus;
@@ -39,17 +40,16 @@ class SpeechService {
   Recognizer? _voskRecognizer;
   stt.SpeechToText? _iosFallback;
 
-  /* ─────────── Init ─────────── */
   Future<void> init(EventBus bus) async {
     _bus = bus;
     _settings = SettingsService.I;
 
-    // Avatar‑TTS
     _bus.on<AvatarSpeakEvent>().listen((evt) => _speak(evt.text));
 
     if (_settings.speechMode != 'online') {
       await _initOfflineEngine();
     }
+
     _speechBridge.setMethodCallHandler(_onPluginCall);
   }
 
@@ -57,16 +57,15 @@ class SpeechService {
     try {
       final vosk = VoskFlutterPlugin.instance();
       final modelPath = await ModelLoader().loadFromAssets(
-          'assets/models/vosk-model-small-de-0.15.zip');
+        'assets/models/vosk-model-small-de-0.15.zip',
+      );
       final model = await vosk.createModel(modelPath);
-      _voskRecognizer =
-      await vosk.createRecognizer(model: model, sampleRate: 16000);
+      _voskRecognizer = await vosk.createRecognizer(model: model, sampleRate: 16000);
     } catch (_) {
       _iosFallback = stt.SpeechToText();
     }
   }
 
-  /* ─────────── Public API ─────────── */
   Future<void> startListening() async {
     _bus.fire(SpeechInputStartedEvent());
 
@@ -84,7 +83,6 @@ class SpeechService {
     }
   }
 
-  /* ── Whisper (Online) ── */
   Future<bool> _listenWhisper() async {
     final key = _settings.whisperApiKey;
     if (key.isEmpty) return false;
@@ -93,8 +91,7 @@ class SpeechService {
       final tmp = '${(await getTemporaryDirectory()).path}/rec.wav';
       if (!await _recordNative(tmp)) return false;
 
-      final uri = Uri.parse(
-          'https://api.openai.com/v1/audio/transcriptions');
+      final uri = Uri.parse('https://api.openai.com/v1/audio/transcriptions');
       final req = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $key'
         ..fields['model'] = 'whisper-1'
@@ -112,20 +109,17 @@ class SpeechService {
     }
   }
 
-  /* ── Vosk / iOS (Offline) ── */
   Future<void> _listenOffline() async {
     try {
       if (_voskRecognizer != null) {
-        final audioPath =
-            '${(await getTemporaryDirectory()).path}/vosk.wav';
+        final audioPath = '${(await getTemporaryDirectory()).path}/vosk.wav';
         if (!await _recordNative(audioPath)) {
           _fail('no_audio');
           return;
         }
 
         final bytes = await File(audioPath).readAsBytes();
-        final isFinal =
-        await _voskRecognizer!.acceptWaveformBytes(bytes);
+        final isFinal = await _voskRecognizer!.acceptWaveformBytes(bytes);
         final resultJson = isFinal
             ? await _voskRecognizer!.getFinalResult()
             : await _voskRecognizer!.getResult();
@@ -153,11 +147,9 @@ class SpeechService {
     }
   }
 
-  /* ── Helpers ── */
   Future<bool> _recordNative(String outPath) async {
     try {
-      final res = await _micBridge.invokeMethod<String>(
-          'recordOnce', {'path': outPath});
+      final res = await _micBridge.invokeMethod<String>('recordOnce', {'path': outPath});
       return res == 'ok' && File(outPath).existsSync();
     } catch (_) {
       return false;
@@ -173,6 +165,7 @@ class SpeechService {
     if (parsed.isEmpty) {
       _fail('no_keywords_detected');
     }
+
     await MealAnalyzer.I.analyze(txt);
   }
 
@@ -188,10 +181,9 @@ class SpeechService {
     }
   }
 
-  /* ── Avatar TTS ── */
   Future<void> _speak(String text) async {
     try {
-      await _ttsBridge.invokeMethod('speak', {
+      await appCtx.aapsBridge._channel.invokeMethod('speak', {
         'text': text,
         'lang': 'de',
       });

@@ -1,24 +1,24 @@
-/*
- * meal_analyzer.dart (v7 – korrigiert FINAL)
- * --------------------------------------------------------------
- * • Parsed Text → FoodItems → ProductMatch → KH ‑Summe
- * • Berücksichtigt Portionen (servingQuantity) **korrekt**
- * • Plausibilitäts‑Check ±15 %, konfigurierbare Warnschwelle
- * • Ergebnis‑Events MealAnalyzedEvent, MealWarningEvent
- * • AAPS‑/Nightscout‑Sync via AapsCarbSyncService
- * • Liefert BolusCalculatedEvent mit Empfehlung (optional)
- *
- * Projektpfad: lib/services/meal_analyzer.dart
- */
+// lib/services/meal_analyzer.dart
+//
+// v8 – BRIDGE READY + VALIDIERT
+// --------------------------------------------------------------
+// • Text → FoodItems → ProductMatch → KH-Berechnung
+// • berücksichtigt Portionen + Plausibilität
+// • sendet MealAnalyzedEvent, MealWarningEvent, BolusCalculatedEvent
+// • persistiert Mahlzeit: Plugin → AAPSBridge, Standalone → NS via AapsCarbSyncService
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'dart:ui';
 import 'package:event_bus/event_bus.dart';
 import 'package:sqflite/sqflite.dart';
 import '../core/event_bus.dart';
+import '../core/app_initializer.dart';
 import '../events/app_events.dart';
 import '../services/settings_service.dart';
 import '../services/product_matcher.dart';
 import '../services/aaps_carb_sync_service.dart';
+import '../services/aaps_bridge.dart';
 import '../services/text_parser.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
@@ -74,12 +74,12 @@ class MealAnalyzer {
   final SettingsService _settings;
   final AapsCarbSyncService _sync;
 
-  Future analyze(String input) async {
+  Future<void> analyze(String input) async {
     final loc = lookupAppLocalizations(const Locale('en'));
     await TextParser.loadUnitsFromYaml('assets/config/units.yaml');
 
     final parsedItems = TextParser.parse(input);
-    final List results = [];
+    final List<MealReviewComponent> results = [];
     double totalCarbs = 0.0;
     bool fuzzyHitOccurred = false;
 
@@ -102,27 +102,51 @@ class MealAnalyzer {
       }
     }
 
+    final jsonResults =
+    List<Map<String, dynamic>>.from(results.map((e) => e.toJson()));
+
     _bus.fire(MealAnalyzedEvent(
       totalCarbs: totalCarbs,
-      components: List<Map<String, dynamic>>.from(results.map((e) => e.toJson())),
+      components: jsonResults,
     ));
 
     _processWarnings(totalCarbs, fuzzyHitOccurred, loc);
-    await _sync.persistMeal(
-        totalCarbs, List<Map<String, dynamic>>.from(results.map((e) => e.toJson())));
 
-    if (_settings.insulinRatio > 0) {
-      final units = _round(totalCarbs / _settings.insulinRatio);
+    // Plugin-Modus → direkt an Bridge senden
+    if (appCtx.flavor == AppFlavor.plugin) {
+      try {
+        await appCtx.aapsBridge.sendCarbEntry(
+          carbs: totalCarbs,
+          time: DateTime.now(),
+          note: loc.mealCarbNoteShort(totalCarbs.toStringAsFixed(1)),
+        );
+      } catch (_) {/* Fallback ignorieren */}
+    } else {
+      await _sync.persistMeal(totalCarbs, jsonResults);
+    }
+
+    // Bolus-Empfehlung
+    double? ratio;
+    if (appCtx.flavor == AppFlavor.plugin) {
+      try {
+        ratio = await appCtx.aapsBridge.getInsulinRatio();
+      } catch (_) {}
+    } else {
+      ratio = _settings.insulinRatio;
+    }
+
+    if (ratio != null && ratio > 0) {
+      final units = _round(totalCarbs / ratio);
       _bus.fire(BolusCalculatedEvent(
         carbs: totalCarbs,
         units: units,
         reason: loc.carbAnalysisReasonDefault(
           _round(totalCarbs).toString(),
-          _settings.insulinRatio.toString(),
+          ratio.toString(),
         ),
         isSafe: units < 10,
         insulin: units,
-        ratio: _settings.insulinRatio,
+        ratio: ratio,
         source: 'analyzer',
       ));
     }
@@ -141,8 +165,7 @@ class MealAnalyzer {
     return carbs != null ? _round(carbs) : null;
   }
 
-  void _processWarnings(
-      double totalCarbs, bool fuzzy, AppLocalizations loc) {
+  void _processWarnings(double totalCarbs, bool fuzzy, AppLocalizations loc) {
     final warnThreshold = _settings.carbWarnThreshold;
     final List<String> warns = [];
     if (totalCarbs >= warnThreshold) {

@@ -1,19 +1,16 @@
-/*
- *  gamification_service.dart  (v3 – FINAL)
- *  --------------------------------------------------------------
- *  Kapselt Punkte‑ & Level‑Logik + Guess‑XP inkl. Streaks.
- *
- *  • awardMeal(), awardSnack()     (bestehend)
- *  • awardGuess({baseXp, duelWin}) (NEU)
- *  • Persistiert Streak in SharedPreferences
- *  • Broadcastet Events:
- *        PointsChangedEvent, LevelUpEvent
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
- */
+// lib/services/gamification_service.dart
+//
+// v3.1 – BRIDGE READY
+// --------------------------------------------------------------
+// Kapselt Punkte- & Level-Logik inkl. Guess-Streaks & XP
+// • awardMeal(), awardSnack()
+// • awardGuess({baseXp, duelWin})
+// • Speichert Guess-Streak in SharedPreferences
+// • Broadcastet Events (PointsChangedEvent, LevelUpEvent, AvatarCelebrateEvent)
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import 'settings_service.dart';
@@ -28,8 +25,6 @@ class GamificationService {
   final _bus = AppEventBus.I.bus;
   late SharedPreferences _prefs;
 
-  /* ─────────────────────────────────────────────────────────── */
-
   Future<void> init() async {
     _set = SettingsService.I;
     _avatar = AvatarService.I;
@@ -39,11 +34,13 @@ class GamificationService {
   /* =====================   Mahlzeiten / Snacks   ===================== */
 
   Future<void> awardMeal() async => _addPoints(_set.pointsPerMeal);
+
   Future<void> awardSnack() async => _addPoints(_set.pointsPerSnack);
 
-  /* =====================   Guess‑Game – NEU   ======================= */
+  /* =====================   Guess‑Game   ======================= */
 
-  /// Liefert gesamte XP, die vergeben wurden.
+  /// Verleiht XP basierend auf Erfolg + Streak.
+  /// Gibt vergebene Gesamt-XP zurück.
   Future<int> awardGuess({
     required int baseXp,
     required bool duelWin,
@@ -61,15 +58,14 @@ class GamificationService {
 
   Future<void> _updateStreak() async {
     final today = DateTime.now();
-    final last = DateTime.tryParse(
-        _prefs.getString('kidsapp_guess_last') ?? '') ??
+    final last = DateTime.tryParse(_prefs.getString('kidsapp_guess_last') ?? '') ??
         today.subtract(const Duration(days: 2));
     var streak = _prefs.getInt('kidsapp_guess_streak') ?? 0;
 
     if (today.difference(last).inDays == 1) {
       streak += 1;
     } else if (today.difference(last).inDays == 0) {
-      // gleich­bleibend
+      // kein Update nötig
     } else {
       streak = 1;
     }
@@ -81,7 +77,7 @@ class GamificationService {
   Future<int> get currentStreak async =>
       _prefs.getInt('kidsapp_guess_streak') ?? 0;
 
-  /* =====================   Intern – Punkte    ======================= */
+  /* =====================   Punkte-Handling   ======================= */
 
   Future<void> _addPoints(int delta) async {
     final oldLvl = _set.childLevel;
@@ -93,9 +89,13 @@ class GamificationService {
       _bus
         ..fire(LevelUpEvent(_set.childLevel))
         ..fire(AvatarCelebrateEvent());
+
+      // Optional: Plugin-Bridge Reaction
+      // if (appCtx.flavor == AppFlavor.plugin) {
+      //   await appCtx.aapsBridge.notifyLevelUp(_set.childLevel);
+      // }
     }
 
-    // Unlock‑Check
     await _avatar.checkUnlocks();
   }
 }

@@ -1,16 +1,19 @@
-/*
- *  fcm_service.dart – v1
- *  --------------------------------------------------------------
- *  Kapselt FCM-Empfang und Versand (nur Android/iOS).
- *  Dient als Backend für push_service.dart und communication_service.dart.
- *  Empfängt Nachrichten, wandelt sie in PushMessage um.
- *
- *  © 2025 Kids Diabetes Companion – GPL-3.0-or-later
- */
+// lib/services/fcm_service.dart
+//
+// v2 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// Kapselt FCM-Empfang und Versand (Android/iOS only)
+// • Empfang: onMessage / Background
+// • Versand: optional über Bridge bei Plugin-Modus
+// • Kompatibel mit PushService, CommunicationService
+//
+// © 2025 Kids Diabetes Companion – GPL-3.0-or-later
 
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import '../core/app_initializer.dart';
+import '../services/aaps_bridge.dart';
 import '../services/push_service.dart';
 
 class FcmService {
@@ -20,6 +23,7 @@ class FcmService {
   final _ctr = StreamController<PushMessage>.broadcast();
   Stream<PushMessage> get onMessage => _ctr.stream;
 
+  /// Initialisiert FCM-Empfang (foreground & background).
   Future<void> init() async {
     final fcm = FirebaseMessaging.instance;
     await fcm.requestPermission();
@@ -28,6 +32,7 @@ class FcmService {
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   }
 
+  /// Verarbeitet eingehende RemoteMessage (z. B. von Firebase).
   void _handleRemoteMessage(RemoteMessage message) {
     final data = message.data;
     final push = PushMessage(
@@ -38,14 +43,27 @@ class FcmService {
     _ctr.add(push);
   }
 
+  /// Erneuert und logged FCM-Token.
   Future<void> refreshToken() async {
     final token = await FirebaseMessaging.instance.getToken();
     debugPrint('🔄 FCM refreshed token: $token');
   }
 
+  /// Sendet Nachricht (wenn Plugin aktiv → Bridge, sonst false).
   Future<bool> send(PushMessage msg) async {
-    // Placeholder: kein echtes FCM-Senden ohne Server-Key/API
-    // Kann später durch eigene Serverweiterleitung ergänzt werden
+    if (appCtx.flavor == AppFlavor.plugin) {
+      try {
+        await appCtx.aapsBridge.sendPushMessage(msg);
+        debugPrint('[FcmService] Push über Bridge gesendet');
+        return true;
+      } catch (e) {
+        debugPrint('[FcmService] ⚠️ Bridge-Senden fehlgeschlagen: $e');
+        return false;
+      }
+    }
+
+    // Kein echter Versand im Standalone – müsste über Backend erfolgen
+    debugPrint('[FcmService] Kein FCM-Senden im Standalone-Modus implementiert');
     return false;
   }
 }
@@ -58,6 +76,5 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
     body: message.notification?.body ?? '',
     data: data,
   );
-  FcmService.instance.onMessage.drain(); // optionaler Reset
   FcmService.instance._ctr.add(push);
 }

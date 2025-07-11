@@ -1,22 +1,36 @@
+// lib/services/sync_service.dart
+//
+// v3 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// Synchronisiert lokale Events via PushService (SMS/FCM/Bridge)
+// • Settings, Snacks, Parent-Approvals
+// • Optional: REST-Sync an API (einstellbar)
+// • EventRouter für Remote-Events
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
+
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:event_bus/event_bus.dart';
 
-import '../events/app_events.dart';
 import '../core/event_bus.dart';
-import 'push_service.dart';
+import '../events/app_events.dart';
+import '../services/push_service.dart';
+
 final EventBus eventBus = AppEventBus.I.bus;
 
-/// SyncService: synchronisiert Events lokal (Push/SMS) oder mit Server
 class SyncService {
   static final SyncService _instance = SyncService._internal();
   factory SyncService() => _instance;
   SyncService._internal();
 
-  static const String _serverUrl = "https://mein-server.de/api/sync"; // optional
+  static const String _serverUrl = "https://mein-server.de/api/sync"; // optional extern
+
   bool _initialized = false;
 
+  /// Initialisiert Listener für Events → Push-Sync
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
@@ -43,7 +57,7 @@ class SyncService {
     });
   }
 
-  /// Sendet Event als PushMessage (JSON-kompatibel) lokal oder remote
+  /// Lokaler Sync (Push über AAPSBridge, FCM, SMS oder Queue)
   Future<void> _syncLocally(String type, Map<String, dynamic> payload) async {
     final msg = PushMessage(
       title: 'Sync',
@@ -56,7 +70,7 @@ class SyncService {
     await PushService.instance.send(msg);
   }
 
-  /// Optionaler Cloud-Sync an API (wenn gewünscht)
+  /// REST-Sync an zentralen API-Endpunkt
   Future<void> syncToServer(String type, Map<String, dynamic> payload) async {
     try {
       final response = await http.post(
@@ -79,7 +93,7 @@ class SyncService {
     }
   }
 
-  /// Eingehende Remote-Events lokal ausführen
+  /// Führt empfangene Events (vom Server/anderen Geräten) lokal aus
   void receiveRemoteEvent(String type, Map<String, dynamic> payload) {
     switch (type) {
       case 'settings':
@@ -90,6 +104,7 @@ class SyncService {
           ));
         }
         break;
+
       case 'snack':
         if (payload.containsKey('carbs') && payload.containsKey('time')) {
           eventBus.fire(SnackLoggedEvent(
@@ -98,14 +113,16 @@ class SyncService {
           ));
         }
         break;
+
       case 'approval':
-        if (payload['action'] != null && payload['approved'] != null) {
+        if (payload.containsKey('action') && payload.containsKey('approved')) {
           eventBus.fire(ParentApprovalEvent(
             action: payload['action'],
             approved: payload['approved'],
           ));
         }
         break;
+
       default:
         debugPrint('⚠️ Unbekannter Event-Typ vom Server: $type');
     }

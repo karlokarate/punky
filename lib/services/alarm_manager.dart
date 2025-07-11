@@ -1,14 +1,13 @@
-/*
- *  alarm_manager.dart  (v1.2 – MODERNIZED)
- *  --------------------------------------------------------------
- *  Globale Alarm‑Engine
- *   • Subscribt auf AppEventBus
- *   • Erstellt Local‑Notification, Vibration, Sound
- *   • Plugin‑Modus: ruft AAPS‑Alarm via Plattform‑Channel auf
- *   • Modernisiert: Pattern Matching, Lint-Fixes
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
- */
+// lib/services/alarm_manager.dart
+//
+// v1.3 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// Globale Alarm-Engine für Audio, Vibration und native Notifikationen
+// • Subscribt auf AppEventBus
+// • Erstellt Local-Notifications, Sound & Vibration
+// • Plugin-Modus: verwendet AAPSBridge statt direkter MethodChannel
+//
+// © 2025 Kids Diabetes Companion – GPL-3.0-or-later
 
 import 'dart:async';
 import 'package:flutter/services.dart';
@@ -16,8 +15,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:vibration/vibration.dart';
 import 'package:just_audio/just_audio.dart';
 
-import '../core/event_bus.dart';
 import '../core/app_initializer.dart';
+import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import 'settings_service.dart';
 
@@ -27,14 +26,11 @@ class AlarmManager {
   AlarmManager._();
   static final AlarmManager I = AlarmManager._();
 
-  static const MethodChannel _pluginCh =
-  MethodChannel('kidsapp/alarm_bridge'); // AAPS‑Alarm
-
   final _localNoti = FlutterLocalNotificationsPlugin();
   final _player = AudioPlayer();
   late StreamSubscription _sub;
 
-  /// Initialisierung in [AppInitializer]
+  /// Initialisierung in AppInitializer
   Future<void> init(AppFlavor flavor) async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iOS = DarwinInitializationSettings();
@@ -101,19 +97,24 @@ class AlarmManager {
     AlarmLevel level = AlarmLevel.normal,
     bool silent = false,
   }) async {
-    final flavor = SettingsService.I.flavor;
+    final flavor = appCtx.flavor;
+
+    // Plugin: leite Alarm an AAPS
     if (flavor == AppFlavor.plugin) {
       try {
-        await _pluginCh.invokeMethod('fireAlarm', {
-          'title': title,
-          'body': body,
-          'level': level.name,
-          'silent': silent,
-        });
+        await appCtx.aapsBridge.invokeAlarm(
+          title: title,
+          body: body,
+          level: level.name,
+          silent: silent,
+        );
         return;
-      } catch (_) {/* fallback */}
+      } catch (_) {
+        // Wenn AAPS-Bridge fehlschlägt → Local fallback
+      }
     }
 
+    // Lokal: Notification + Sound + Vibration
     await _showLocalNotification(title, body, level, silent);
 
     if (!silent) {

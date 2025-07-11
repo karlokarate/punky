@@ -1,19 +1,19 @@
-/*
- *  settings_service.dart  (v9 – PARENT‑PIN + COMPAT)
- *  --------------------------------------------------------------------------
- *  • Basierend auf v8 – MERGED FINAL (Setup‑Wizard, Remote‑Update, Plugin‑Mirror)
- *  • Neu: Feld  parentPin  (Getter, Setter, Remote‑Update‑Support)
- *  • Alle bisherigen Pref‑Keys unverändert; neuer Key `kidsapp_parent_pin`
- *  • Vollständig rückwärtskompatibel
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
- */
+// lib/services/settings_service.dart
+//
+// v11 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// Singleton Settings-Service mit lokaler + Plugin-Persistenz
+// • SharedPreferences für Standalone
+// • Spiegelung via appCtx.aapsBridge bei Plugin-Modus
+// • Alle Schlüssel rückwärtskompatibel
+// • Remote-Sync (settings_update, asset_upload)
+// • ChangeNotifier + EventBus-Integration
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,18 +21,12 @@ import '../core/app_initializer.dart';
 import '../events/app_events.dart';
 import '../event_bus.dart';
 
-/* ------------------------------------------------------------------------- */
-/*  SettingsService – Singleton + ChangeNotifier                              */
-/* ------------------------------------------------------------------------- */
 class SettingsService extends ChangeNotifier {
-  /* ---------------- Singleton / Factory ---------------------------------- */
   SettingsService._(this.flavor);
   static late SettingsService I;
 
-  /// Erstellt die Instanz (Provider‑kompatibel) und lädt Prefs.
   static Future<SettingsService> create() async {
-    final flavor = const String.fromEnvironment('INTEGRATION_MODE',
-            defaultValue: 'sa')
+    final flavor = const String.fromEnvironment('INTEGRATION_MODE', defaultValue: 'sa')
         .toLowerCase()
         .startsWith('p')
         ? AppFlavor.plugin
@@ -46,63 +40,39 @@ class SettingsService extends ChangeNotifier {
   final AppFlavor flavor;
   late SharedPreferences _prefs;
 
-  /* ---------------- Init -------------------------------------------------- */
-  Future<void> _load() async =>
-      _prefs = await SharedPreferences.getInstance();
+  Future<void> _load() async => _prefs = await SharedPreferences.getInstance();
 
-  /* ----------------------------------------------------------------------- */
-  /*  Setup ‑ Wizard                                                         */
-  /* ----------------------------------------------------------------------- */
-  bool get initialSetupDone =>
-      _prefs.getBool('kidsapp_setup_done') ?? false;
-  Future<void> setInitialSetupDone(bool v) async =>
-      _set('kidsapp_setup_done', v);
-  Future<void> resetSetup() async =>
-      _set('kidsapp_setup_done', false, silent: true);
+  /* --- Setup / Wizard --- */
+  bool get initialSetupDone => _prefs.getBool('kidsapp_setup_done') ?? false;
+  Future<void> setInitialSetupDone(bool v) async => _set('kidsapp_setup_done', v);
+  Future<void> resetSetup() async => _set('kidsapp_setup_done', false, silent: true);
 
-  /* ----------------------------------------------------------------------- */
-  /*  Nightscout                                                             */
-  /* ----------------------------------------------------------------------- */
-  String get nightscoutUrl =>
-      _prefs.getString('kidsapp_ns_url') ?? 'https://example.herokuapp.com';
-  Future<void> setNightscoutUrl(String v) async =>
-      _set('kidsapp_ns_url', v, mirrorKey: 'nightscout_url');
+  /* --- Nightscout --- */
+  String get nightscoutUrl => _prefs.getString('kidsapp_ns_url') ?? 'https://example.herokuapp.com';
+  Future<void> setNightscoutUrl(String v) async => _set('kidsapp_ns_url', v, mirrorKey: 'nightscout_url');
 
-  String get nightscoutSecretSHA1 =>
-      _prefs.getString('kidsapp_ns_secret') ?? '';
-  Future<void> setNightscoutSecret(String v) async =>
-      _set('kidsapp_ns_secret', v, mirrorKey: 'api_secret');
+  String get nightscoutSecretSHA1 => _prefs.getString('kidsapp_ns_secret') ?? '';
+  Future<void> setNightscoutSecret(String v) async => _set('kidsapp_ns_secret', v, mirrorKey: 'api_secret');
 
-  /* ----------------------------------------------------------------------- */
-  /*  GPT / KI Endpoints & Keys                                              */
-  /* ----------------------------------------------------------------------- */
+  /* --- GPT / KI --- */
   String get gptEndpoint => _prefs.getString('kidsapp_gpt_endpoint') ?? '';
-  Future<void> setGptEndpoint(String v) async =>
-      _set('kidsapp_gpt_endpoint', v);
+  Future<void> setGptEndpoint(String v) async => _set('kidsapp_gpt_endpoint', v);
 
   String get gptApiKey => _prefs.getString('kidsapp_gpt_key') ?? '';
   Future<void> setGptApiKey(String v) async => _set('kidsapp_gpt_key', v);
 
   String get whisperApiKey => _prefs.getString('kidsapp_whisper_key') ?? '';
-  Future<void> setWhisperApiKey(String v) async =>
-      _set('kidsapp_whisper_key', v);
+  Future<void> setWhisperApiKey(String v) async => _set('kidsapp_whisper_key', v);
 
   String get visionApiKey => _prefs.getString('kidsapp_vision_key') ?? '';
-  Future<void> setVisionApiKey(String v) async =>
-      _set('kidsapp_vision_key', v);
+  Future<void> setVisionApiKey(String v) async => _set('kidsapp_vision_key', v);
 
-  /* ----------------------------------------------------------------------- */
-  /*  Push / Benachrichtigungen                                              */
-  /* ----------------------------------------------------------------------- */
-  String get pushEndpoint =>
-      _prefs.getString('kidsapp_push_endpoint') ?? '';
-  Future<void> setPushEndpoint(String v) async =>
-      _set('kidsapp_push_endpoint', v);
+  /* --- Push / SMS --- */
+  String get pushEndpoint => _prefs.getString('kidsapp_push_endpoint') ?? '';
+  Future<void> setPushEndpoint(String v) async => _set('kidsapp_push_endpoint', v);
 
-  String get parentTopic =>
-      _prefs.getString('kidsapp_parent_topic') ?? 'parents';
-  Future<void> setParentTopic(String v) async =>
-      _set('kidsapp_parent_topic', v);
+  String get parentTopic => _prefs.getString('kidsapp_parent_topic') ?? 'parents';
+  Future<void> setParentTopic(String v) async => _set('kidsapp_parent_topic', v);
 
   bool get enablePush => _prefs.getBool('kidsapp_push') ?? true;
   Future<void> setEnablePush(bool v) async => _set('kidsapp_push', v);
@@ -114,78 +84,47 @@ class SettingsService extends ChangeNotifier {
   Future<void> setMuteAlarms(bool v) async => _set('kidsapp_alarm_mute', v);
 
   String get parentPhone => _prefs.getString('kidsapp_phone') ?? '';
-  Future<void> setParentPhone(String v) async =>
-      _set('kidsapp_phone', v);
+  Future<void> setParentPhone(String v) async => _set('kidsapp_phone', v);
 
-  /* ----------------------------------------------------------------------- */
-  /*  Eltern‑PIN (neu)                                                       */
-  /* ----------------------------------------------------------------------- */
+  /* --- Eltern-PIN --- */
   String get parentPin => _prefs.getString('kidsapp_parent_pin') ?? '';
-  Future<void> setParentPin(String v) async =>
-      _set('kidsapp_parent_pin', v);
+  Future<void> setParentPin(String v) async => _set('kidsapp_parent_pin', v);
 
-  /* ----------------------------------------------------------------------- */
-  /*  Betriebsmodi / Integration                                             */
-  /* ----------------------------------------------------------------------- */
-  String get speechMode =>
-      _prefs.getString('kidsapp_speech_mode') ?? 'hybrid';
-  Future<void> setSpeechMode(String v) async =>
-      _set('kidsapp_speech_mode', v);
+  /* --- Modi / Integration --- */
+  String get speechMode => _prefs.getString('kidsapp_speech_mode') ?? 'hybrid';
+  Future<void> setSpeechMode(String v) async => _set('kidsapp_speech_mode', v);
 
   String get imageMode => _prefs.getString('kidsapp_image_mode') ?? 'hybrid';
-  Future<void> setImageMode(String v) async =>
-      _set('kidsapp_image_mode', v);
+  Future<void> setImageMode(String v) async => _set('kidsapp_image_mode', v);
 
-  String get integrationMode =>
-      const String.fromEnvironment('INTEGRATION_MODE',
-          defaultValue: 'sa');
+  double get insulinRatio => _prefs.getDouble('kidsapp_insulin_ratio') ?? 10.0;
+  Future<void> setInsulinRatio(double v) async => _set('kidsapp_insulin_ratio', v);
 
-  double get insulinRatio =>
-      _prefs.getDouble('kidsapp_insulin_ratio') ?? 10.0;
-  Future<void> setInsulinRatio(double v) async =>
-      _set('kidsapp_insulin_ratio', v);
+  double get maxBolusUnits => _prefs.getDouble('kidsapp_max_bolus') ?? 10.0;
+  Future<void> setMaxBolusUnits(double v) async => _set('kidsapp_max_bolus', v);
 
-  /* ----------------------------------------------------------------------- */
-  /*  Eltern‑relevante Grenzen                                               */
-  /* ----------------------------------------------------------------------- */
-  double get maxBolusUnits =>
-      _prefs.getDouble('kidsapp_max_bolus') ?? 10.0;
-  Future<void> setMaxBolusUnits(double v) async =>
-      _set('kidsapp_max_bolus', v);
-  /* ----------------------------------------------------------------------- */
-  /*  Rate-Limiting für GlobalRateLimiter                                   */
-  /* ----------------------------------------------------------------------- */
+  /* --- Rate Limits --- */
   int get rateLimitNightscout => _prefs.getInt('kidsapp_rate_ns') ?? 30;
-  Future<void> setRateLimitNightscout(int v) async =>
-      _set('kidsapp_rate_ns', v);
+  Future<void> setRateLimitNightscout(int v) async => _set('kidsapp_rate_ns', v);
 
   int get rateLimitGpt => _prefs.getInt('kidsapp_rate_gpt') ?? 3;
-  Future<void> setRateLimitGpt(int v) async =>
-      _set('kidsapp_rate_gpt', v);
+  Future<void> setRateLimitGpt(int v) async => _set('kidsapp_rate_gpt', v);
 
   int get rateLimitSms => _prefs.getInt('kidsapp_rate_sms') ?? 20;
-  Future<void> setRateLimitSms(int v) async =>
-      _set('kidsapp_rate_sms', v);
+  Future<void> setRateLimitSms(int v) async => _set('kidsapp_rate_sms', v);
 
   int get rateLimitPush => _prefs.getInt('kidsapp_rate_push') ?? 5;
-  Future<void> setRateLimitPush(int v) async =>
-      _set('kidsapp_rate_push', v);
+  Future<void> setRateLimitPush(int v) async => _set('kidsapp_rate_push', v);
 
-  /* ----------------------------------------------------------------------- */
-  /*  Gamification                                                           */
-  /* ----------------------------------------------------------------------- */
+  /* --- Gamification --- */
   int get pointsPerMeal => _prefs.getInt('kidsapp_pp_meal') ?? 10;
-  Future<void> setPointsPerMeal(int v) async =>
-      _set('kidsapp_pp_meal', v);
+  Future<void> setPointsPerMeal(int v) async => _set('kidsapp_pp_meal', v);
 
   int get pointsPerSnack => _prefs.getInt('kidsapp_pp_snack') ?? 5;
-  Future<void> setPointsPerSnack(int v) async =>
-      _set('kidsapp_pp_snack', v);
+  Future<void> setPointsPerSnack(int v) async => _set('kidsapp_pp_snack', v);
 
-  int get bonusEverySnacks =>
-      _prefs.getInt('kidsapp_snack_bonus_every') ?? 5;
-  Future<void> setBonusEverySnacks(int v) async =>
-      _set('kidsapp_snack_bonus_every', v);
+  int get bonusEverySnacks => _prefs.getInt('kidsapp_snack_bonus_every') ?? 5;
+  Future<void> setBonusEverySnacks(int v) async => _set('kidsapp_snack_bonus_every', v);
 
   int get childPoints => _prefs.getInt('kidsapp_points') ?? 0;
   int get childLevel => _prefs.getInt('kidsapp_level') ?? 1;
@@ -197,21 +136,15 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /* ----------------------------------------------------------------------- */
-  /*  Health / Warnungen                                                     */
-  /* ----------------------------------------------------------------------- */
+  /* --- Health & Warnungen --- */
   int get carbWarnThreshold => _prefs.getInt('kidsapp_carb_warn') ?? 50;
-  Future<void> setCarbWarnThreshold(int v) async =>
-      _set('kidsapp_carb_warn', v);
+  Future<void> setCarbWarnThreshold(int v) async => _set('kidsapp_carb_warn', v);
 
-  /* ----------------------------------------------------------------------- */
-  /*  Avatar / Themes                                                        */
-  /* ----------------------------------------------------------------------- */
+  /* --- Themes / Avatar --- */
   static const List<String> defaultThemes = ['unicorn', 'space', 'ocean'];
   List<String> get availableThemes => defaultThemes;
 
-  String get childThemeKey =>
-      _prefs.getString('kidsapp_theme') ?? defaultThemes.first;
+  String get childThemeKey => _prefs.getString('kidsapp_theme') ?? defaultThemes.first;
   Future<void> setChildTheme(String v) async => _set('kidsapp_theme', v);
 
   List<String> get unlockedGimmicks =>
@@ -219,9 +152,7 @@ class SettingsService extends ChangeNotifier {
   Future<void> unlockGimmick(String k) async =>
       _set('kidsapp_gimmicks', {...unlockedGimmicks, k}.toList());
 
-  /* ----------------------------------------------------------------------- */
-  /*  Remote Update – Payload Handler                                        */
-  /* ----------------------------------------------------------------------- */
+  /* --- Remote Payload Handler --- */
   Future<void> applyRemotePayload(Map<String, dynamic> p) async {
     switch (p['type']) {
       case 'settings_update':
@@ -230,7 +161,6 @@ class SettingsService extends ChangeNotifier {
       case 'asset_upload':
         await _applyAssetUpload(p);
         break;
-      default:
     }
   }
 
@@ -250,7 +180,7 @@ class SettingsService extends ChangeNotifier {
       'enableSms': () => setEnableSms(value),
       'muteAlarms': () => setMuteAlarms(value),
       'parentPhone': () => setParentPhone(value),
-      'parentPin': () => setParentPin(value),                  // ← NEU
+      'parentPin': () => setParentPin(value),
       'pointsPerMeal': () => setPointsPerMeal(value),
       'pointsPerSnack': () => setPointsPerSnack(value),
       'bonusEverySnacks': () => setBonusEverySnacks(value),
@@ -275,21 +205,14 @@ class SettingsService extends ChangeNotifier {
     final dir = await getApplicationDocumentsDirectory();
     final bytes = base64Decode(p['data']);
     final mime = p['mime'] as String;
-    final path =
-        '${dir.path}/assets/remote_${p['name']}.${mime.split('/').last}';
+    final path = '${dir.path}/assets/remote_${p['name']}.${mime.split('/').last}';
     await File(path).create(recursive: true);
     await File(path).writeAsBytes(bytes);
   }
 
-  /* ----------------------------------------------------------------------- */
-  /*  Internal Helpers                                                       */
-  /* ----------------------------------------------------------------------- */
-  static const MethodChannel _prefBridge =
-      MethodChannel('kidsapp/settings_bridge');
-
+  /* --- Set Helper --- */
   Future<void> _set(String key, Object value,
       {String? mirrorKey, bool silent = false}) async {
-    // schreiben
     if (value is int) {
       await _prefs.setInt(key, value);
     } else if (value is bool) {
@@ -302,16 +225,16 @@ class SettingsService extends ChangeNotifier {
       await _prefs.setString(key, value.toString());
     }
 
-    // ggf. Plugin‑Mirror
     if (flavor == AppFlavor.plugin && mirrorKey != null) {
       try {
-        await _prefBridge
-            .invokeMethod('setPref', {'key': mirrorKey, 'value': value});
+        await appCtx.aapsBridge._channel.invokeMethod('setPref', {
+          'key': mirrorKey,
+          'value': value,
+        });
       } catch (_) {/* ignore */}
     }
 
     if (!silent) {
-      // EventBus + ChangeNotifier
       eventBus.fire(SettingsChangedEvent(key: key, value: value));
       notifyListeners();
     }

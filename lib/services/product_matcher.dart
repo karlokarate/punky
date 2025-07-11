@@ -1,19 +1,14 @@
-/*
- *  product_matcher.dart   (v1.3 – FINAL)
- *  --------------------------------------------------------------
- *  Leistungsfähiger Matcher für Lebensmittel → Open​-Food​-Facts​-DB
- *
- *  • API
- *      ProductMatcher(db).findMatches(FoodItem) → MatchResult
- *  • Features
- *      – Fuzzy​-Suche (Levenshtein & LIKE)
- *      – Portion​-Einheiten aus units.yaml
- *      – Carbs / 100 g + pro Portion
- *      – Cache (LRU, 256 Einträge)
- *      – EventBus​-Hook → ProductLookupFailedEvent
- *
- *  © 2025 Kids Diabetes Companion – GPL​-3.0​-or​later
- */
+// lib/services/product_matcher.dart
+//
+// v1.4 – FINAL BRIDGE READY
+// --------------------------------------------------------------
+// Leistungsfähiger Lebensmitteldaten-Matcher
+// • Direkte SQLite-Abfrage + Fuzzy-Fallback (Levenshtein)
+// • Portionen, Carbs/100g, Carbs/Portion
+// • Fire Event bei Lookup-Fehlschlag (ProductLookupFailedEvent)
+// • LRU-Cache (256 Einträge)
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import 'package:event_bus/event_bus.dart';
 import 'package:sqflite/sqflite.dart';
@@ -34,7 +29,8 @@ class ProductMatch {
   final double carbsPer100g;
   final double? carbsPerServing;
   final double? servingQuantity;
-  ProductMatch({
+
+  const ProductMatch({
     required this.id,
     required this.name,
     required this.carbsPer100g,
@@ -46,12 +42,14 @@ class ProductMatch {
 class MatchResult {
   final List<ProductMatch> matches;
   final bool fuzzyHit;
+
   const MatchResult(this.matches, {this.fuzzyHit = false});
 }
 
 class ProductLookupFailedEvent extends AppEvent {
   final String term;
   ProductLookupFailedEvent(this.term);
+
   @override
   Map<String, dynamic> toJson() => {'term': term};
 }
@@ -62,8 +60,6 @@ class _CacheEntry {
   _CacheEntry(this.key, this.value);
 }
 
-/* ========================================================================= */
-
 class ProductMatcher {
   ProductMatcher(this._db) {
     _bus = AppEventBus.I.bus;
@@ -73,6 +69,7 @@ class ProductMatcher {
   late final EventBus _bus;
   final _cache = <String, _CacheEntry>{};
 
+  /// Haupt-Match-Funktion: prüft Cache, dann DB, dann Fuzzy
   Future<MatchResult> findMatches(FoodItem item) async {
     final key = '${item.rawName.toLowerCase()}-${item.amount.floor()}';
     if (_cache.containsKey(key)) {
@@ -82,10 +79,12 @@ class ProductMatcher {
     }
 
     final rows = await _db.rawQuery(
-      'SELECT _id, product_name, carbohydrates_100g, serving_quantity, carbohydrates_serving '
-          'FROM products '
-          'WHERE product_name LIKE ? '
-          'LIMIT 10',
+      '''
+      SELECT _id, product_name, carbohydrates_100g, serving_quantity, carbohydrates_serving
+      FROM products
+      WHERE product_name LIKE ?
+      LIMIT 10
+      ''',
       ['%${item.rawName}%'],
     );
 
@@ -94,10 +93,12 @@ class ProductMatcher {
 
     if (matches.isEmpty) {
       final rows2 = await _db.rawQuery(
-        'SELECT _id, product_name, carbohydrates_100g, serving_quantity, carbohydrates_serving '
-            'FROM products '
-            'WHERE carbohydrates_100g IS NOT NULL '
-            'LIMIT 5000',
+        '''
+        SELECT _id, product_name, carbohydrates_100g, serving_quantity, carbohydrates_serving
+        FROM products
+        WHERE carbohydrates_100g IS NOT NULL
+        LIMIT 5000
+        ''',
       );
       final best = _bestSimilarity(item.rawName, rows2);
       if (best != null) {
@@ -113,11 +114,13 @@ class ProductMatcher {
     return res;
   }
 
+  /// SQL-Row zu ProductMatch konvertieren
   List<ProductMatch> _toMatches(List<Map<String, Object?>> rows) => rows.map((r) {
     double? carbsServing;
     if (r['carbohydrates_serving'] != null) {
       carbsServing = (r['carbohydrates_serving'] as num).toDouble();
     }
+
     return ProductMatch(
       id: r['_id'].toString(),
       name: (r['product_name'] as String?)?.trim() ?? 'Unbenannt',
@@ -127,6 +130,7 @@ class ProductMatcher {
     );
   }).toList();
 
+  /// Fuzzy-Suche als Fallback bei SQL-Miss
   ProductMatch? _bestSimilarity(String term, List<Map<String, Object?>> rows) {
     double bestScore = 0.0;
     Map<String, Object?>? bestRow;
@@ -144,6 +148,7 @@ class ProductMatcher {
     return null;
   }
 
+  /// LRU-Cache speichern
   void _putIntoCache(String k, MatchResult v) {
     if (_cache.length >= 256) {
       _cache.remove(_cache.keys.first);

@@ -1,36 +1,45 @@
-/*
- *  aaps_carb_sync_service.dart  (v1 – FINAL)
- *  --------------------------------------------------------------
- *  Persistiert analysierte KH‑Mahlzeiten in die AAPS‑Carb‑DB.
- *  • Stand‑alone  :   no‑op
- *  • Plugin       :   MethodChannel → ContentProvider‑Insert
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
- */
+// lib/services/aaps_carb_sync_service.dart
+//
+// v2 – FINAL mit AAPSBridge-Integration
+// --------------------------------------------------------------
+// Persistiert analysierte KH‑Mahlzeiten in AAPS über appCtx.aapsBridge
+// • Stand‑alone:   kein Effekt
+// • Plugin‑Modus:  Übergibt carbs + Komponenten + Timestamp via Bridge
+//
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
-import 'package:flutter/services.dart';
-
-import '../core/app_initializer.dart';
+import '../core/app_flavor.dart';
+import '../core/app_initializer.dart'; // für Zugriff auf globalen AppContext
 
 class AapsCarbSyncService {
   AapsCarbSyncService._(this._flavor);
   static late AapsCarbSyncService I;
   final AppFlavor _flavor;
-  static const _ch = MethodChannel('kidsapp/carb_sync');
 
   static Future<void> init(AppFlavor flavor) async {
     I = AapsCarbSyncService._(flavor);
   }
 
   Future<void> persistMeal(
-      double carbs, List<Map<String, dynamic>> components) async {
+      double carbs,
+      List<Map<String, dynamic>> components,
+      ) async {
     if (_flavor != AppFlavor.plugin) return;
+
     try {
-      await _ch.invokeMethod('addMeal', {
-        'carbs': carbs,
-        'components': components,
-        'timestamp': DateTime.now().millisecondsSinceEpoch
-      });
-    } catch (_) {/* ignore */}
+      await appCtx.aapsBridge.sendCarbEntry(
+        carbs: carbs,
+        time: DateTime.now(),
+        note: _buildNote(components),
+      );
+    } catch (e) {
+      // Optional: Logging oder Fehlerweiterleitung
+    }
+  }
+
+  /// Erstellt eine Kurzbeschreibung für den Bolus-Notiz-Eintrag
+  String _buildNote(List<Map<String, dynamic>> components) {
+    if (components.isEmpty) return 'KH aus KidsApp';
+    return components.map((e) => e['label'] ?? '').where((s) => s != '').join(', ');
   }
 }

@@ -1,17 +1,17 @@
-/*
- *  background_service.dart  (v6 – FINAL)
- *  --------------------------------------------------------------
- *  Plattform‑unabhängiger Background‑Scheduler.
- *  • Android → WorkManager   • iOS → BGTaskScheduler
- *  • Tasks:
- *      1. Nightscout‑LoopStatus Refresh (IOB/COB)
- *      2. Push‑Token‑Sync  (FCM  / APNS)
- *      3. Upload Offline‑Queue  (CommunicationService)
- *  • EventBus‑Broadcast  LoopStatusUpdatedEvent
- *  • Plugin‑Modus: nutzt AAPS‑ContentProvider statt REST‑NS
- *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
- */
+// lib/services/background_service.dart
+//
+// v7 – FINAL mit AAPSBridge-Unterstützung
+// --------------------------------------------------------------
+// Plattform-unabhängiger Background-Scheduler.
+// • Android → WorkManager   • iOS → BGTaskScheduler
+// • Tasks:
+//     1. LoopStatusRefresh (IOB/COB)
+//     2. Push-Token-Sync
+//     3. Upload Offline-Queue
+// • EventBus feuert LoopStatusUpdatedEvent
+// • Plugin-Modus nutzt AAPSBridge statt REST-Nightscout
+//
+// © 2025 Kids Diabetes Companion – GPL-3.0-or-later
 
 import 'dart:async';
 import 'package:event_bus/event_bus.dart';
@@ -24,7 +24,7 @@ import '../events/app_events.dart';
 import '../services/nightscout_service.dart';
 import '../services/communication_service.dart';
 import '../services/settings_service.dart';
-import '../services/nightscout_models.dart';
+import '../services/aaps_bridge.dart';
 
 class LoopStatusUpdatedEvent extends AppEvent {
   final double iob;
@@ -54,7 +54,7 @@ class BackgroundService {
     _bus = AppEventBus.I.bus;
 
     if (flavor == AppFlavor.plugin) {
-      _registerAapsListeners();
+      _registerAapsBridgeListener();
     } else {
       _schedulePlatformTasks();
     }
@@ -68,6 +68,7 @@ class BackgroundService {
     } catch (_) {
       debugPrint('Background‑Task registration failed');
     }
+
     _bgCh.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'runTask':
@@ -94,19 +95,30 @@ class BackgroundService {
 
   /* ─────────────────────────   Plugin‑Modus   ──────────────────────── */
 
-  void _registerAapsListeners() {
-    // nichts erforderlich – AAPS liefert LoopStatus via ContentObserver
+  void _registerAapsBridgeListener() {
+    // EventChannel in AAPSBridge übernimmt schon das Live-Listening
+    // → kein zusätzlicher Listener nötig
   }
 
   /* ─────────────────────────   Core‑Job   ─────────────────────────── */
 
   Future<void> _refreshLoop() async {
-    final ns = NightscoutService.instance;
-    final status = await ns.fetchDeviceStatus();
-    if (status != null) {
-      final iob = status.iob ?? 0.0;
-      final cob = status.cob ?? 0.0;
-      _bus.fire(LoopStatusUpdatedEvent(iob, cob));
+    if (flavor == AppFlavor.plugin) {
+      // Werte direkt via AAPSBridge holen (aktuellster Stand)
+      final bridge = appCtx.aapsBridge;
+      final bg = await bridge.getCurrentBG();
+      // IOB/COB sind bei plugin-mode nicht direkt abrufbar – kommen per Event
+      debugPrint('[BG] Aktueller BZ laut AAPSBridge: $bg');
+      // kein bus.fire – erfolgt automatisch durch AAPSBridge
+    } else {
+      // Nightscout REST-Fallback
+      final ns = NightscoutService.instance;
+      final status = await ns.fetchDeviceStatus();
+      if (status != null) {
+        final iob = status.iob ?? 0.0;
+        final cob = status.cob ?? 0.0;
+        _bus.fire(LoopStatusUpdatedEvent(iob, cob));
+      }
     }
   }
 }
