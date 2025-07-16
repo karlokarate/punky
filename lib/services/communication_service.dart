@@ -20,8 +20,6 @@ import 'package:hive/hive.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-import '../core/app_context.dart';
 import '../core/app_flavor.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
@@ -29,9 +27,8 @@ import '../services/settings_service.dart';
 import '../services/alarm_manager.dart';
 import '../services/sms_service.dart';
 import '../services/push_service.dart';
-import '../services/aaps_bridge.dart';
 import '../network/global_rate_limiter.dart';
-
+import '../core/global.dart';
 class CommunicationService {
   CommunicationService._(this.flavor);
   static late CommunicationService I;
@@ -47,7 +44,7 @@ class CommunicationService {
   }
 
   Future<void> _setup() async {
-    _bus = AppEventBus.I.bus;
+    _bus = AppEventBus.I.raw;
     _queue = await Hive.openBox('push_queue');
 
     if (SettingsService.I.enablePush == true) {

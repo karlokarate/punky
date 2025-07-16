@@ -6,6 +6,7 @@
 ///  • Kein Rückgabewert – Job muss intern mit Completer<T> arbeiten, wenn nötig.
 ///  • Fehler im Job müssen intern behandelt werden – kein catch hier!
 /// --------------------------------------------------------------------------
+library;
 
 import 'dart:async';
 import 'dart:collection';

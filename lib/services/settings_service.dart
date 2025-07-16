@@ -16,12 +16,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../core/app_context.dart';
 import '../core/app_flavor.dart';
 import '../events/app_events.dart';
-import '../event_bus.dart';
-
+import '../core/event_bus.dart';
+import '../core/global.dart';
 class SettingsService extends ChangeNotifier {
   SettingsService._(this.flavor);
   static late SettingsService I;
@@ -228,12 +226,10 @@ class SettingsService extends ChangeNotifier {
 
     if (flavor == AppFlavor.plugin && mirrorKey != null) {
       try {
-        await appCtx.aapsBridge.channel.invokeMethod('setPref', {
-          'key': mirrorKey,
-          'value': value,
-        });
+        await appCtx.aapsBridge.setPref(mirrorKey, value);
       } catch (_) {/* ignore */}
     }
+
 
     if (!silent) {
       eventBus.fire(SettingsChangedEvent(key: key, value: value));

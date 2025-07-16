@@ -7,6 +7,7 @@
 
 import 'dart:async';
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -17,7 +18,7 @@ import '../events/app_events.dart' show BolusCalculatedEvent, MealAnalyzedEvent;
 
 class MealReviewScreen extends StatefulWidget {
   final EventBus eventBus;
-  const MealReviewScreen({super.key, required this.eventBus});
+  const MealReviewScreen({super.key, required this.eventBus, required AppContext appContext, Object? initialData});
 
   @override
   State<MealReviewScreen> createState() => _MealReviewScreenState();

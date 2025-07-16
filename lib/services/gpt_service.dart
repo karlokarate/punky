@@ -67,7 +67,7 @@ class GptService {
   Future<String?> sendPrompt(String prompt) async {
     if (_apiKey.isEmpty) return null;
     final map = await _callGpt(_apiKey, prompt, {});
-    return map['text'] ?? null;
+    return map['text'];
   }
 
   Future<Map<String, dynamic>> _callGpt(String key, String prompt, dynamic evt) async {

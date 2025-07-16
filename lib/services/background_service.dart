@@ -17,15 +17,13 @@ import 'dart:async';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-
-import '../core/app_context.dart';
+import '../core/global.dart';
 import '../core/app_flavor.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/nightscout_service.dart';
 import '../services/communication_service.dart';
-import '../services/settings_service.dart';
-import '../services/aaps_bridge.dart';
+
 
 class LoopStatusUpdatedEvent extends AppEvent {
   final double iob;
@@ -52,7 +50,7 @@ class BackgroundService {
   }
 
   Future<void> _setup() async {
-    _bus = AppEventBus.I.bus;
+    _bus = AppEventBus.I.raw;
 
     if (flavor == AppFlavor.plugin) {
       _registerAapsBridgeListener();

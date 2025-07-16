@@ -22,7 +22,7 @@ class GamificationService {
 
   late SettingsService _set;
   late AvatarService _avatar;
-  final _bus = AppEventBus.I.bus;
+  final _bus = AppEventBus.I.raw;
   late SharedPreferences _prefs;
 
   Future<void> init() async {

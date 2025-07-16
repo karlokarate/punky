@@ -10,16 +10,14 @@
 // © 2025 Kids Diabetes Companion – GPL-3.0-or-later
 
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:vibration/vibration.dart';
 import 'package:just_audio/just_audio.dart';
-
-import '../core/app_context.dart';
+import '../core/global.dart';
 import '../core/app_flavor.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
-import 'settings_service.dart';
+
 
 enum AlarmLevel { normal, critical }
 
@@ -39,10 +37,10 @@ class AlarmManager {
       const InitializationSettings(android: android, iOS: iOS),
     );
 
-    _sub = AppEventBus.I.bus.on<AppEvent>().listen(_onEvent);
+    _sub = AppEventBus.I.raw.on<AppEvent>().listen(_onEvent);
     await _player.setAsset('assets/sounds/alarm.mp3');
 
-    AppEventBus.I.bus.on<GenericAapsEvent>().listen((e) {
+    AppEventBus.I.raw.on<GenericAapsEvent>().listen((e) {
       if (e.nativeType == 'OnStopAlarms') _stopAlarm();
     });
   }

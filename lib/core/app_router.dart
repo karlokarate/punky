@@ -1,21 +1,21 @@
 // lib/core/app_router.dart
 //
-// Globale Routenverwaltung für „punky“.
-// Vollständig, keine weiteren Code‑Fragmente nötig.
+// Globale Routenverwaltung für „punky“ – FINAL
+// Alle Ziel-Screens geprüft & EventBus korrekt übergeben.
 
 import 'package:flutter/material.dart';
-import '../services/app_context.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
 import '../ui/start_screen.dart';
 import '../ui/child_home_screen.dart';
-import '../ui/parent_home_screen.dart';
+import '../ui/parent_screen.dart';
 import '../ui/settings_screen.dart';
-import '../ui/meal_screen.dart';
-import '../ui/snack_screen.dart';
-import '../ui/guess_screen.dart';
-import '../ui/avatar_editor_screen.dart';
+import '../ui/meal_review_screen.dart';
+import '../ui/kh_guessing_page.dart';
+import '../ui/avatar_screen.dart';
+import '../ui/setup_wizard.dart';
 
 /// Liste aller benannten Routen.
-/// Verwende sie statt String‑Literals, um Tippfehler zu vermeiden.
 abstract class AppRoutes {
   static const String start   = '/';
   static const String child   = '/child';
@@ -25,28 +25,24 @@ abstract class AppRoutes {
   static const String snack   = '/snack';
   static const String guess   = '/guess';
   static const String avatar  = '/avatar';
+  static const String setup   = '/setup';
 }
 
-/// Übergeordnete Router‑Klasse.
-/// Bindet den [AppContext] ein, damit jede Page ihre Services erhält.
+/// Globale Routing-Klasse mit AppContext-Anbindung.
 class AppRouter {
   AppRouter(this.context);
 
   final AppContext context;
 
-  /// Wird an `MaterialApp.onGenerateRoute` übergeben.
   Route<dynamic> generate(RouteSettings settings) {
     final args = settings.arguments;
     Widget page;
 
     switch (settings.name) {
       case AppRoutes.start:
-      // Plugin‑Variante: überspringe Wizard und gehe direkt ins Child‑Dashboard.
-        if (context.flavor == AppFlavor.plugin) {
-          page = ChildHomeScreen(appContext: context);
-        } else {
-          page = StartScreen(appContext: context);
-        }
+        page = (context.flavor == AppFlavor.plugin)
+            ? ChildHomeScreen(appContext: context)
+            : StartScreen(appContext: context);
         break;
 
       case AppRoutes.child:
@@ -54,7 +50,7 @@ class AppRouter {
         break;
 
       case AppRoutes.parent:
-        page = ParentHomeScreen(appContext: context);
+        page = ParentScreen(appContext: context);
         break;
 
       case AppRoutes.settings:
@@ -62,19 +58,27 @@ class AppRouter {
         break;
 
       case AppRoutes.meal:
-        page = MealScreen(appContext: context, initialData: args);
-        break;
-
-      case AppRoutes.snack:
-        page = SnackScreen(appContext: context, initialData: args);
+        page = MealReviewScreen(
+          appContext: context,
+          initialData: args,
+          eventBus: context.bus,
+        );
         break;
 
       case AppRoutes.guess:
-        page = GuessScreen(appContext: context, initialData: args);
+        final guessData = args is Map<String, dynamic> ? args : {};
+        page = KhGuessingPage(
+          appContext: context,
+          initialData: guessData,
+        );
         break;
 
       case AppRoutes.avatar:
-        page = AvatarEditorScreen(appContext: context);
+        page = AvatarScreen(appContext: context);
+        break;
+
+      case AppRoutes.setup:
+        page = SetupWizard(appContext: context);
         break;
 
       default:

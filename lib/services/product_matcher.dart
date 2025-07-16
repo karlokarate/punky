@@ -62,7 +62,7 @@ class _CacheEntry {
 
 class ProductMatcher {
   ProductMatcher(this._db) {
-    _bus = AppEventBus.I.bus;
+    _bus = AppEventBus.I.raw;
   }
 
   final Database _db;

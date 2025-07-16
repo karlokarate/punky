@@ -4,18 +4,18 @@
  *  Großflächige, kindgerechte UI für das KH‑Guessing‑Game.
  */
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/kh_guessing_controller.dart';
-import '../core/event_bus.dart';
 import '../services/gamification_service.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
 class KhGuessingPage extends StatelessWidget {
-  const KhGuessingPage({super.key});
+  const KhGuessingPage({super.key, required AppContext appContext, Object? initialData});
 
   @override
   Widget build(BuildContext context) {

@@ -9,8 +9,7 @@
 // © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
 import '../core/app_flavor.dart';
-import '../core/app_context.dart';
-
+import '../core/global.dart';
 class AapsCarbSyncService {
   AapsCarbSyncService._(this._flavor);
   static late AapsCarbSyncService I;

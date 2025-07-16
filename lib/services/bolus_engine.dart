@@ -12,20 +12,18 @@
 
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/widgets.dart';
-
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
+import '../core/global.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
-import '../services/aaps_bridge.dart';
 import '../services/nightscout_service.dart';
 import '../services/settings_service.dart';
-import '../core/app_context.dart';
 
 class BolusEngine {
   static final BolusEngine I = BolusEngine._();
   BolusEngine._();
 
-  final EventBus _bus = AppEventBus.I.bus;
+  final EventBus _bus = AppEventBus.I.raw;
   final SettingsService _settings = SettingsService.I;
   final NightscoutService _ns = NightscoutService.instance;
 

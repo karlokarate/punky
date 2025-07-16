@@ -139,6 +139,14 @@
       "ratio": {}
     }
   },
+  "bolusErrorBridge": "Insulin-Faktor konnte nicht über AAPS ermittelt werden.",
+  "bolusNoteBridge": "AAPS-Bolus: {units} Einheiten",
+  "@bolusNoteBridge": {
+    "placeholders": {
+      "units": {}
+    }
+  },
+
   "carbAnalysisReasonDefault": "carbs {carbs} ÷ Faktor {ratio}",
   "@carbAnalysisReasonDefault": {
     "placeholders": {
@@ -303,6 +311,13 @@
   "limitsKhWarnLimit": "carbs‑Warnschwelle (g)",
   "limitsTitle": "BZ‑ & carbs‑Thresholdn",
   "mealRevDialogCarbs": "Kohlenhydrate",
+  "mealCarbNoteShort": "Meal mit {carbs} g KH analysiert",
+  "@mealCarbNoteShort": {
+    "placeholders": {
+      "carbs": {}
+    }
+  },
+
   "mealRevDialogConfirm": "Bolus übernehmen",
   "mealRevDialogNone": "Keine weiteren Hinweise.",
   "mealRevDialogTitle": "Bolus‑Empfehlung prüfen",

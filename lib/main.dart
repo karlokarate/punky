@@ -1,17 +1,22 @@
 // lib/main.dart
 //
-// v4 – Vollständiger Einstiegspunkt der Kids Diabetes Companion-App.
+// v4 – FINAL
+// Vollständiger Einstiegspunkt der Kids Diabetes Companion-App
 // --------------------------------------------------------------
 // • Erkennt Plugin- vs Standalone-Modus (via --dart-define)
 // • Startet mit globalem AppContext & AppRouter
 // • Aktiviert alle globalen Services über AppInitializer
+// • Inklusive Theme, Error-Handler und initialer Router-Integration
 //
 // © 2025 Kids Diabetes Companion – GPL-3.0-or-later
 
 import 'package:flutter/material.dart';
+import 'core/app_flavor.dart';
 import 'core/app_initializer.dart';
 import 'core/app_router.dart';
 import 'core/app_context.dart';
+import 'core/event_bus.dart';
+late AppContext appCtx;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,8 +28,9 @@ void main() async {
       : AppFlavor.standalone;
 
   // Initialisiere Services, EventBus, Storage usw.
-  appCtx = await AppInitializer.init(flavor: flavor);
-
+  appCtx = await initializeApp(flavor);
+  // Initialisiere EventBus
+  await AppEventBus.init(flavor);
   // Globaler Error-Handler
   FlutterError.onError = (details) {
     FlutterError.presentError(details);

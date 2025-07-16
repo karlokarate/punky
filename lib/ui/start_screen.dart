@@ -5,11 +5,12 @@
  *  © 2025 Kids Diabetes Companion – GPL-3.0-or-later
  */
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:flutter/material.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
 class StartScreen extends StatelessWidget {
-  const StartScreen({super.key});
+  const StartScreen({super.key, required AppContext appContext});
 
   @override
   Widget build(BuildContext context) {

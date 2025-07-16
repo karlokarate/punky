@@ -1,35 +1,35 @@
 // -----------------------------------------------------------------------------
-//  avatar_screen.dart  (v3 – full‑featured)
-//  -----------------------------------------------------------------------------
-//  • Tab‑basierter Editor für alle Avatar‑Layer
-//  • Sperren‑/Freischalten‑Anzeige inkl. Tooltip für Unlock‑Bedingungen
-//  • Auswahl wird live gespeichert (AvatarService)
-//  • Unterstützt Custom‑Uploads (lokale PNGs)
-//  • Mini‑Gamification: Zufällige Preview‑Würfel‑Action per FAB
-//  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
+//  avatar_screen.dart  (v4 – weitergereicht & validiert)
+// -----------------------------------------------------------------------------
+//  • AppContext wird durch alle Ebenen gereicht (für Logging, Navigation, Bus)
+//  • LayerTabs & ItemTiles haben Zugriff auf globale Konfigurationen
 // -----------------------------------------------------------------------------
 
 import 'dart:io';
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 import '../services/avatar_service.dart';
+import '../events/app_events.dart';
 
 class AvatarScreen extends StatelessWidget {
-  const AvatarScreen({super.key});
+  final AppContext appContext;
+  const AvatarScreen({super.key, required this.appContext});
 
   @override
   Widget build(BuildContext context) => ChangeNotifierProvider.value(
     value: AvatarService.I,
-    child: const _Body(),
+    child: _Body(appContext: appContext),
   );
 }
 
 /* ═══════════════════════════════════ UI‑BODY ═══════════════════════════════ */
 
 class _Body extends StatelessWidget {
-  const _Body();
+  final AppContext appContext;
+  const _Body({required this.appContext});
 
   static const _layers = [
     'background',
@@ -50,8 +50,9 @@ class _Body extends StatelessWidget {
         appBar: AppBar(
           title: Text(l.avatarTitle),
           bottom: TabBar(
-              isScrollable: true,
-              tabs: _layers.map((e) => Tab(text: _label(l, e))).toList()),
+            isScrollable: true,
+            tabs: _layers.map((e) => Tab(text: _label(l, e))).toList(),
+          ),
         ),
         floatingActionButton: FloatingActionButton(
           tooltip: l.avatarRandomize,
@@ -72,12 +73,14 @@ class _Body extends StatelessWidget {
             for (final i in rnd) {
               AvatarService.I.equip(i.layer, i.key);
             }
-          },
 
+            // Beispielnutzung AppContext → EventBus oder Logging möglich
+            appContext.bus.fire(const AvatarCelebrateEvent());
+          },
           child: const Icon(Icons.shuffle),
         ),
         body: TabBarView(
-          children: _layers.map((layer) => _LayerTab(layer)).toList(),
+          children: _layers.map((layer) => _LayerTab(layer: layer, appContext: appContext)).toList(),
         ),
       ),
     );
@@ -106,8 +109,9 @@ class _Body extends StatelessWidget {
 /* ══════════════════════════════════ LAYER TAB ══════════════════════════════ */
 
 class _LayerTab extends StatelessWidget {
-  const _LayerTab(this.layer);
   final String layer;
+  final AppContext appContext;
+  const _LayerTab({required this.layer, required this.appContext});
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +129,8 @@ class _LayerTab extends StatelessWidget {
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4, childAspectRatio: .9),
             itemCount: items.length,
-            itemBuilder: (_, i) => _ItemTile(layer: layer, item: items[i]),
+            itemBuilder: (_, i) =>
+                _ItemTile(layer: layer, item: items[i], appContext: appContext),
           ),
         ),
       ],
@@ -136,10 +141,10 @@ class _LayerTab extends StatelessWidget {
 /* ══════════════════════════════════ ITEM TILE ══════════════════════════════ */
 
 class _ItemTile extends StatelessWidget {
-  const _ItemTile({required this.layer, required this.item});
-
   final String layer;
   final AvatarItem item;
+  final AppContext appContext;
+  const _ItemTile({required this.layer, required this.item, required this.appContext});
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +157,12 @@ class _ItemTile extends StatelessWidget {
         : AssetImage(item.assetPath) as ImageProvider;
 
     return GestureDetector(
-      onTap: unlocked ? () => svc.equip(layer, item.key) : null,
+      onTap: unlocked
+          ? () {
+        svc.equip(layer, item.key);
+        appContext.bus.fire(AvatarSpeakEvent(item.name)); // Beispiel
+      }
+          : null,
       child: Tooltip(
         message: unlocked
             ? item.name
@@ -210,8 +220,9 @@ class _AvatarPreview extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: imgPaths.map((p) {
-          final provider =
-          p.startsWith('/') ? FileImage(File(p)) : AssetImage(p) as ImageProvider;
+          final provider = p.startsWith('/')
+              ? FileImage(File(p))
+              : AssetImage(p) as ImageProvider;
           return Image(image: provider);
         }).toList(),
       ),

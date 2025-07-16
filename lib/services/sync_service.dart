@@ -19,7 +19,7 @@ import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/push_service.dart';
 
-final EventBus eventBus = AppEventBus.I.bus;
+final EventBus eventBus = AppEventBus.I.raw;
 
 class SyncService {
   static final SyncService _instance = SyncService._internal();

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:synchronized/synchronized.dart';
 import '../services/settings_service.dart';
 import '../events/app_events.dart';
-import '../event_bus.dart';
+import '../core/event_bus.dart';
 
 typedef JobLogger = void Function(String channel, DateTime timestamp);
 

@@ -35,7 +35,8 @@
   "@sectionModes": { "description": "Erkennungs- und Betriebsmodi" },
   "labelSpeechMode": "Sprachmodus",
   "labelImageMode": "Bildmodus",
-
+  "sectionSecurity": "Security",
+  "labelParentPin" : "Parent PIN",
   "sectionNotifications": "Benachrichtigungen",
   "@sectionNotifications": { "description": "Push, SMS & Mute" },
   "labelPush": "Push aktivieren",
@@ -138,6 +139,14 @@
       "ratio": {}
     }
   },
+  "bolusErrorBridge": "Insulin-Faktor konnte nicht über AAPS ermittelt werden.",
+  "bolusNoteBridge": "AAPS-Bolus: {units} Einheiten",
+  "@bolusNoteBridge": {
+    "placeholders": {
+      "units": {}
+    }
+  },
+
   "carbAnalysisReasonDefault": "carbs {carbs} ÷ Faktor {ratio}",
   "@carbAnalysisReasonDefault": {
     "placeholders": {

@@ -10,6 +10,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +21,7 @@ import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 import '../services/settings_service.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, required AppContext appContext});
 
   @override
   Widget build(BuildContext context) => ChangeNotifierProvider.value(

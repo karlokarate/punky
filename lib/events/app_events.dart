@@ -1,15 +1,14 @@
 /*
- *  app_events.dart  (v9 – COMPLETE)
+ *  app_events.dart  (v11 – CONST‑Optimiert)
  *  --------------------------------------------------------------------------
- *  • Enthält **ALLE** bisher dokumentierten Events + AvatarSpeakEvent +
- *    GptResponseReceived + NightscoutAnalysisAvailableEvent.
- *  • Jeder Event implementiert [AppEvent] → Serialisierung kompatibel.
- *  • Factory [AppEventFactory] mappt Native‑Typen auf Dart‑Klassen.
+ *  • Alle feldlosen Events als `const` verwendbar (z. B. AvatarCelebrateEvent())
+ *  • Vollständig rückwärtskompatibel mit v9
  *
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
 abstract class AppEvent {
+  const AppEvent();
   Map<String, dynamic> toJson();
 }
 
@@ -58,7 +57,7 @@ enum NavTarget {
 
 class AppNavigationEvent extends AppEvent {
   final NavTarget target;
-  AppNavigationEvent(this.target);
+  const AppNavigationEvent(this.target);
   @override
   Map<String, dynamic> toJson() => {'target': target.name};
 }
@@ -84,12 +83,13 @@ class MealWarningEvent extends AppEvent {
 /* ────────────────── Image‑Input ­────────────────────── */
 
 class ImageInputStartedEvent extends AppEvent {
+  const ImageInputStartedEvent();
   @override
   Map<String, dynamic> toJson() => {};
 }
 
 class ImageInputFinishedEvent extends AppEvent {
-  final List<Map<String, dynamic>> items; // ParsedFoodItem.toJson()
+  final List<Map<String, dynamic>> items;
   ImageInputFinishedEvent(this.items);
   @override
   Map<String, dynamic> toJson() => {'items': items};
@@ -105,6 +105,7 @@ class ImageInputFailedEvent extends AppEvent {
 /* ────────────────── Speech‑Input ────────────────────── */
 
 class SpeechInputStartedEvent extends AppEvent {
+  const SpeechInputStartedEvent();
   @override
   Map<String, dynamic> toJson() => {};
 }
@@ -214,14 +215,18 @@ class NewMealDetectedEvent extends AppEvent {
 
 /* ────────────────── Avatar ­────────────────────────── */
 
-abstract class AvatarEvent extends AppEvent {}
+abstract class AvatarEvent extends AppEvent {
+  const AvatarEvent() : super();
+}
 
 class AvatarCelebrateEvent extends AvatarEvent {
+  const AvatarCelebrateEvent();
   @override
   Map<String, dynamic> toJson() => {};
 }
 
 class AvatarSadEvent extends AvatarEvent {
+  const AvatarSadEvent();
   @override
   Map<String, dynamic> toJson() => {};
 }
@@ -233,7 +238,6 @@ class AvatarItemPreviewEvent extends AvatarEvent {
   Map<String, dynamic> toJson() => {'itemKey': itemKey};
 }
 
-/// 🔊 Text‑Ausgabe via TTS
 class AvatarSpeakEvent extends AvatarEvent {
   final String text;
   AvatarSpeakEvent(this.text);
@@ -270,7 +274,6 @@ class GPTRecommendationEvent extends AppEvent {
   Map<String, dynamic> toJson() => {'result': result};
 }
 
-/// UI kann fertige GPT‑Antworten anzeigen.
 class GptResponseReceived extends AppEvent {
   final Map<String, dynamic> response;
   GptResponseReceived(this.response);
@@ -278,7 +281,6 @@ class GptResponseReceived extends AppEvent {
   Map<String, dynamic> toJson() => response;
 }
 
-/// Automatische Nightscout‑Analyse verfügbar
 class NightscoutAnalysisAvailableEvent extends AppEvent {
   final List<Map<String, dynamic>> recommendations;
   NightscoutAnalysisAvailableEvent(this.recommendations);

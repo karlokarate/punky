@@ -7,12 +7,13 @@
  *  • Schnelle Haupt‑Aktionen (Meal, Snack, Guess‑Game)
  *  • Voll lokalisiert (keine verschachtelten ARB‑Keys mehr)
  *
- *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
+ *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
 import 'dart:async';
 import 'dart:io';
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
@@ -29,7 +30,8 @@ import 'avatar_screen.dart';
 /* ───────── Main Class ───────── */
 
 class ChildHomeScreen extends StatefulWidget {
-  const ChildHomeScreen({super.key});
+  final AppContext appContext;
+  const ChildHomeScreen({super.key, required this.appContext});
 
   @override
   State<ChildHomeScreen> createState() => _ChildHomeScreenState();
@@ -40,7 +42,7 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
 
   final SettingsService _settings = SettingsService.I;
   final AvatarService _avatar = AvatarService.I;
-  final EventBus _bus = AppEventBus.I.bus;
+  final EventBus _bus = AppEventBus.I.raw;
 
   double _iob = .0, _cob = .0;
   String _loop = '—';
@@ -156,7 +158,7 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
     child: Row(
       children: [
         GestureDetector(
-          onDoubleTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AvatarScreen())),
+          onDoubleTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AvatarScreen(appContext: widget.appContext))),
           onLongPress: _cycleTheme,
           child: _miniAvatar(),
         ),

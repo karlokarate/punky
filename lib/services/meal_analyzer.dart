@@ -13,16 +13,14 @@ import 'dart:ui';
 import 'package:event_bus/event_bus.dart';
 import 'package:sqflite/sqflite.dart';
 import '../core/event_bus.dart';
-import '../core/app_context.dart';
 import '../core/app_flavor.dart';
 import '../events/app_events.dart';
 import '../services/settings_service.dart';
 import '../services/product_matcher.dart';
 import '../services/aaps_carb_sync_service.dart';
-import '../services/aaps_bridge.dart';
 import '../services/text_parser.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
-
+import '../core/global.dart';
 class MealReviewComponent {
   final String name;
   final double grams;
@@ -60,7 +58,7 @@ class MealReviewComponent {
 class MealAnalyzer {
   MealAnalyzer._(Database db)
       : _matcher = ProductMatcher(db),
-        _bus = AppEventBus.I.bus,
+        _bus = AppEventBus.I.raw,
         _settings = SettingsService.I,
         _sync = AapsCarbSyncService.I;
 

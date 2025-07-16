@@ -86,7 +86,7 @@ class KhGuessingController extends ChangeNotifier {
       _actualCarbs != null && _aiGuess != null; // für UI‑Enable
 
   /* EventBus */
-  final _bus = AppEventBus.I.bus;
+  final _bus = AppEventBus.I.raw;
   StreamSubscription? _mealSub;
 
   /* ───────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 /*
- *  event_bus.dart   (v3 – mit get stream & Map-Fix)
+ *  event_bus.dart   (v4 – FINALIZED)
  *  --------------------------------------------------------------
- *  Einziger Einstiegspunkt für den globalen EventBus.
+ *  Einheitlicher Einstiegspunkt für den globalen EventBus.
  *
  *  • Standalone  : reiner dart:event_bus
  *  • Plugin      : zusätzlich Bridge zu AAPS per Plattform‑Channel
@@ -19,10 +19,11 @@ import 'app_flavor.dart';
 import '../events/app_events.dart';
 
 class AppEventBus {
-  AppEventBus._(this.bus);
-  final EventBus bus;
+  final EventBus _bus;
 
-  static late AppEventBus I;
+  AppEventBus._(this._bus);
+
+  static late final AppEventBus I;
 
   static const _rx = EventChannel('kidsapp/aaps_events');
   static const _tx = MethodChannel('kidsapp/aaps_send');
@@ -44,7 +45,6 @@ class AppEventBus {
   /* ────────────────────────────────────────────────── */
 
   static void _onNative(dynamic msg) {
-    // Erwartet {type:"ClassName", payload:{…}}
     if (msg is Map && msg['type'] is String) {
       final type = msg['type'] as String;
       final raw = msg['payload'];
@@ -52,18 +52,30 @@ class AppEventBus {
           ? Map<String, dynamic>.from(raw.map((k, v) => MapEntry(k.toString(), v)))
           : {};
       final evt = AppEventFactory.fromNative(type, payload);
-      I.bus.fire(evt);
+      I._bus.fire(evt);
     }
   }
 
   static void _onDart(AppEvent e) async {
     try {
-      await _tx.invokeMethod('sendEvent',
-          {'type': e.runtimeType.toString(), 'payload': e.toJson()});
+      await _tx.invokeMethod('sendEvent', {
+        'type': e.runtimeType.toString(),
+        'payload': e.toJson()
+      });
     } catch (_) {/* Ignorieren */}
   }
 
-  /// Globale Event‑Bridge
-  Stream<dynamic> get stream => bus.on();
+  /// Dart → Dart Listener Zugriff
+  Stream<T> on<T>() => _bus.on<T>();
+
+  /// Manuelles Fire
+  void fire(AppEvent e) => _bus.fire(e);
+
+  /// Zugriff auf native Instanz (falls nötig)
+  EventBus get raw => _bus;
 }
-EventBus get eventBus => AppEventBus.I.bus;
+
+/// Kurzform für Dart-Code
+EventBus get eventBus => AppEventBus.I.raw;
+Stream<T> onEvent<T>() => AppEventBus.I.on<T>();
+void fireEvent(AppEvent e) => AppEventBus.I.fire(e);

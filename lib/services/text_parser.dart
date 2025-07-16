@@ -1,14 +1,11 @@
-import 'dart:convert';
 import 'dart:ui';
-
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import 'package:event_bus/event_bus.dart';
-
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 import '../core/event_bus.dart';
 import '../events/app_events.dart';
-final EventBus eventBus = AppEventBus.I.bus;
+final EventBus eventBus = AppEventBus.I.raw;
 
 class ParsedItem {
   final double amount;

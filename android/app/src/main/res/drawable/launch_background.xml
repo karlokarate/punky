@@ -1,13 +1,10 @@
-<!-- res/drawable/launch_background.xml -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/bg">
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/launch_background01" />
+    <item>
+        <color android:color="@android:color/white"/>
     </item>
     <item>
         <bitmap
-            android:gravity="center"
-            android:src="@drawable/icon" />
+                android:gravity="center"
+                android:src="@drawable/launch_background01" />
     </item>
 </layer-list>

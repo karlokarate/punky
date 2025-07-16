@@ -5,12 +5,13 @@
 
 import 'dart:async';
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../event_bus.dart';
+import '../core/event_bus.dart';
 import '../events/app_events.dart';
 import '../services/gpt_analysis_service.dart';
 import '../services/nightscout_service.dart';
@@ -20,7 +21,7 @@ import '../widgets/pin_guard.dart';
 import '../services/nightscout_models.dart';
 
 class ParentScreen extends StatefulWidget {
-  const ParentScreen({super.key});
+  const ParentScreen({super.key, required AppContext appContext});
 
   @override
   State<ParentScreen> createState() => _ParentScreenState();

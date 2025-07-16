@@ -1,88 +1,90 @@
 // lib/core/app_initializer.dart
 //
-// v8 – FINAL CONTEXT MATCHED
-// ----------------------------------------------------------------
-// • Synchronisiert mit app_context.dart (v1)
-// • Erstellt alle Dienste und gibt vollständigen AppContext zurück
-// • Unterstützt Standalone- & Plugin-Modus via AppFlavor
+// v7 – Hintergrunddienste explizit initialisiert
+// --------------------------------------------------------------
+// Initialisiert AppContext und alle Services asynchron beim App-Start
 //
-// © 2025 Kids Diabetes Companion – GPL-3.0-or-later
+// © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
 
-import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
-
-import 'app_flavor.dart';
-import 'event_bus.dart';
-import 'app_context.dart';
-
-import '../services/aaps_bridge.dart';
+import '../core/app_context.dart';
+import '../core/app_flavor.dart';
+import '../core/event_bus.dart';
 import '../services/settings_service.dart';
-import '../services/push_service.dart';
-import '../services/sms_service.dart';
 import '../services/avatar_service.dart';
 import '../services/gamification_service.dart';
-import '../services/gpt_service.dart';
 import '../services/image_input_service.dart';
 import '../services/speech_service.dart';
-import '../services/aaps_carb_sync_service.dart';
-import '../services/meal_analyzer.dart';
 import '../services/nightscout_service.dart';
 import '../services/recommendation_history_service.dart';
 import '../services/communication_service.dart';
-import '../services/alarm_manager.dart';
+import '../services/bolus_engine.dart';
+import '../services/sms_service.dart';
+import '../services/gpt_service.dart';
+import '../services/meal_analyzer.dart';
+import '../services/aaps_bridge.dart';
+import '../services/background_service.dart';
+import '../services/fcm_service.dart';
+import '../services/push_service.dart';
+import '../services/aaps_carb_sync_service.dart';
 
-class AppInitializer {
-  AppInitializer._();
+/// Initialisiert den globalen [AppContext] und alle abhängigen Services.
+/// Muss beim App-Start einmalig aufgerufen werden.
+Future<AppContext> initializeApp(AppFlavor flavor) async {
+  // Öffne die lokale SQLite-Datenbank
+  final Database db = await openDatabase('punky.db');
 
-  static Future<AppContext> init({required AppFlavor flavor}) async {
-    // 1 | SQLite initialisieren
-    final dbPath = p.join(await getDatabasesPath(), 'kidsapp_${flavor.name}.db');
-    final db = await openDatabase(dbPath, version: 1);
+  // Initialisiere SettingsService (Singleton, lädt Einstellungen)
+  final settings = await SettingsService.create();
 
-    // 2 | EventBus + PluginBridge
-    await AppEventBus.init(flavor);
-    final bus = AppEventBus.I;
+  // Initialisiere EventBus für globale Events (vor allen Listeners!)
+  await AppEventBus.init(flavor);
 
-    // 3 | Settings laden
-    final settings = await SettingsService.create();
+  // Initialisiere alle weiteren Services als Singletons mit ihren jeweiligen Methoden
+  await AvatarService.I.init(AppEventBus.I.raw);
+  await GamificationService.instance.init();
+  await ImageInputService.instance.init(AppEventBus.I.raw);
+  await SpeechService.instance.init(AppEventBus.I.raw);
+  await NightscoutService.instance.init(SettingsService.I);
+  await RecommendationHistoryService.i.init();
+  await CommunicationService.init(flavor);
+  await SmsService.instance.init();
+  await GptService.I.init(AppEventBus.I.raw);
+  await MealAnalyzer.init(db);
+  await AapsCarbSyncService.init(flavor);
+  await PushService.instance.init(AppEventBus.I.raw);
 
-    // 4 | AAPSBridge starten
-    final aapsBridge = AAPSBridge(bus.bus);
+  // BolusEngine ist lazy, keine explizite Init nötig
+  final bolusEngine = BolusEngine.I;
 
-    // 5 | Services initialisieren
-    await PushService.instance.init(bus.bus);
-    await SmsService.instance.init();
-    await AvatarService.I.init(bus.bus);
-    await GamificationService.instance.init();
-    await GptService.I.init(bus.bus);
-    await ImageInputService.instance.init(bus.bus);
-    await NightscoutService.instance.init(settings);
-    await AapsCarbSyncService.init(flavor);
-    await MealAnalyzer.init(db);
-    await SpeechService.instance.init(bus.bus);
-    await RecommendationHistoryService.i.init();
-    await CommunicationService.init(flavor);
-    await AlarmManager.I.init(flavor);
+  // Weitere optionale Services (sofern benötigt)
+  final aapsBridge = AAPSBridge(AppEventBus.I.raw);
 
-    return AppContext(
-      flavor: flavor,
-      db: db,
-      bus: bus,
-      settings: settings,
-      aapsBridge: aapsBridge,
-      pushService: PushService.instance,
-      smsService: SmsService.instance,
-      avatarService: AvatarService.I,
-      gamificationService: GamificationService.instance,
-      gptService: GptService.I,
-      imageInputService: ImageInputService.instance,
-      speechService: SpeechService.instance,
-      nightscoutService: NightscoutService.instance,
-      mealAnalyzer: MealAnalyzer.I,
-      carbSync: AapsCarbSyncService.I,
-      recommendationHistoryService: RecommendationHistoryService.i,
-      communicationService: CommunicationService.I,
-      alarmManager: AlarmManager.I,
-    );
-  }
+  // Erstelle AppContext mit allen Services
+  final context = AppContext(
+    flavor: flavor,
+    db: db,
+    bus: AppEventBus.I.raw,
+    settings: settings,
+    aapsBridge: aapsBridge,
+    pushService: PushService.instance,
+    smsService: SmsService.instance,
+    avatarService: AvatarService.I,
+    gamificationService: GamificationService.instance,
+    gptService: GptService.I,
+    imageInputService: ImageInputService.instance,
+    speechService: SpeechService.instance,
+    nightscoutService: NightscoutService.instance,
+    mealAnalyzer: MealAnalyzer.I,
+    carbSync: AapsCarbSyncService.I,
+    recommendationHistoryService: RecommendationHistoryService.i,
+    communicationService: CommunicationService.I,
+    bolusEngine: bolusEngine,
+  );
+
+  // Hintergrunddienste explizit initialisieren
+  await BackgroundService.init(flavor);
+  await FcmService.instance.init();
+
+  return context;
 }

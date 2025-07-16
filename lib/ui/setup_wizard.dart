@@ -6,6 +6,7 @@
  *  © 2025 Kids Diabetes Companion – GPL‑3.0‑or‑later
  */
 
+import 'package:diabetes_kids_app/core/app_context.dart';
 import 'package:flutter/material.dart';
 import 'package:diabetes_kids_app/l10n/gen_l10n/app_localizations.dart';
 
@@ -13,7 +14,7 @@ import '../services/settings_service.dart';
 import '../services/aaps_logic_port.dart';
 
 class SetupWizard extends StatefulWidget {
-  const SetupWizard({super.key});
+  const SetupWizard({super.key, required AppContext appContext});
 
   @override
   State<SetupWizard> createState() => _SetupWizardState();

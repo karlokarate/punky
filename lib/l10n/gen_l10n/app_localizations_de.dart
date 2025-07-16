@@ -238,6 +238,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get bolusErrorBridge =>
+      'Insulin-Faktor konnte nicht über AAPS ermittelt werden.';
+
+  @override
+  String bolusNoteBridge(Object units) {
+    return 'AAPS-Bolus: $units Einheiten';
+  }
+
+  @override
   String carbAnalysisReasonDefault(Object carbs, Object ratio) {
     return 'carbs $carbs ÷ Faktor $ratio';
   }
@@ -518,6 +527,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get mealRevDialogCarbs => 'Kohlenhydrate';
+
+  @override
+  String mealCarbNoteShort(Object carbs) {
+    return 'Meal mit $carbs g KH analysiert';
+  }
 
   @override
   String get mealRevDialogConfirm => 'Bolus übernehmen';
