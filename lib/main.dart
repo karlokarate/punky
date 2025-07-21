@@ -14,6 +14,7 @@ import 'core/app_context.dart';
 import 'core/app_flavor.dart';
 import 'core/app_initializer.dart';
 import 'core/app_router.dart';
+import 'l10n/gen_l10n/app_localizations.dart';
 import 'core/global.dart';
 
 void main() async {
@@ -38,6 +39,8 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       initialRoute: '/',
       onGenerateRoute: AppRouter(this.context).generate,
     );
