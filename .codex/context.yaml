@@ -1,0 +1,6 @@
+include:
+  - pubspec.yaml
+  - lib/**
+  - flutter_whisper/**
+  - assets/**
+  - android/**

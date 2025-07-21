@@ -1,0 +1,430 @@
+# lib/assets/config/portion_units_de.yaml ─ Schlüsselwörter für deutschsprachige Mengenangaben
+# -------------------------------------------------------------
+# Struktur je Einheit:
+#   id:          eindeutiger Snake‑Case‑Schlüssel
+#   canonical:   offizielle Singular‑Form mit Groß‑/Umlauten
+#   category:    grobe Einteilung (portion | container | utensil | pinch | drop)
+#   synonyms:    alle geläufigen Singular‑ & Plural­formen inkl. Dialekt/
+#                Umgangssprache (Kleinbuchstaben, keine Zahlen)
+# -------------------------------------------------------------
+einheiten:
+  - id: stueck
+    canonical: "Stück"
+    category: portion
+    synonyms:
+      - stück
+      - stueck
+      - stücke
+      - stuecke
+      - stückchen
+      - stueckchen
+      - stückle
+      - stueckle
+      - stücker
+      - stuecker
+      - stueckerl
+      - stueckerl
+
+  - id: scheibe
+    canonical: "Scheibe"
+    category: portion
+    synonyms:
+      - scheibe
+      - scheiben
+      - scheibchen
+      - scheibchenweise
+      - scheibl
+      - scheiberl
+      - scheiberln
+
+  - id: kugel
+    canonical: "Kugel"
+    category: portion
+    synonyms:
+      - kugel
+      - kugeln
+      - kugelchen
+      - kugerl
+      - kugerln
+      - bällchen
+      - baellchen
+      - ball
+      - bälle
+      - baelle
+
+  - id: riegel
+    canonical: "Riegel"
+    category: portion
+    synonyms:
+      - riegel
+      - riegeln
+      - riegelchen
+      - rieglerl
+      - rieglerln
+
+  - id: portion
+    canonical: "Portion"
+    category: portion
+    synonyms:
+      - portion
+      - portionen
+      - portiönchen
+      - portioench
+      - portiönle
+      - portionchen
+      - portiönlein
+
+  - id: handvoll
+    canonical: "Handvoll"
+    category: portion
+    synonyms:
+      - handvoll
+      - hand v oll
+      - händevoll
+      - haendevoll
+      - haende voll
+      - eine hand
+      - zwei hände
+      - haender voll
+
+  - id: fingerbreit
+    canonical: "Fingerbreit"
+    category: portion
+    synonyms:
+      - fingerbreit
+      - finger breit
+      - zwei finger
+      - dreifingerbreit
+      - daumenbreit
+
+  - id: messerspitze
+    canonical: "Messerspitze"
+    category: portion
+    synonyms:
+      - messerspitze
+      - messerspitzen
+      - ms
+      - msp
+      - msp.
+      - messerspitz
+      - messerspitzenvoll
+
+  - id: loeffel
+    canonical: "Löffel"
+    category: utensil
+    synonyms:
+      - löffel
+      - loeffel
+      - löffelchen
+      - loeffelchen
+      - löffel voll
+      - loeffelvoll
+      - loeffel‑voll
+      - suppenlöffel
+      - kaffeloeffel
+      - kaffee loeffel
+
+  - id: essloeffel
+    canonical: "Esslöffel"
+    category: utensil
+    synonyms:
+      - esslöffel
+      - essloeffel
+      - el
+      - el.
+      - esslöffelchen
+      - esslöffeln
+      - esslöffel voll
+      - eßlöffel
+      - eßl.
+
+  - id: teeloeffel
+    canonical: "Teelöffel"
+    category: utensil
+    synonyms:
+      - teelöffel
+      - teeloeffel
+      - tl
+      - tl.
+      - teelöffelchen
+      - tee‑löffel
+      - tee loeffel
+      - teelöffeln
+
+  - id: prise
+    canonical: "Prise"
+    category: pinch
+    synonyms:
+      - prise
+      - prisen
+      - prisen voll
+      - prieschen
+      - prieserl
+
+  - id: spritzer
+    canonical: "Spritzer"
+    category: pinch
+    synonyms:
+      - spritzer
+      - spritzerl
+      - spritzerln
+      - spritzerchen
+      - spritzer voll
+
+  - id: schuss
+    canonical: "Schuss"
+    category: pinch
+    synonyms:
+      - schuss
+      - schuss voll
+      - schüsserl
+      - schuesse
+
+  - id: tropfen
+    canonical: "Tropfen"
+    category: drop
+    synonyms:
+      - tropfen
+      - tropfen voll
+      - tröpfchen
+      - troepfchen
+      - troepfchenweise
+      - tröpflein
+
+  - id: bund
+    canonical: "Bund"
+    category: portion
+    synonyms:
+      - bund
+      - bündel
+      - buendel
+      - bundl
+      - bündelchen
+      - buendelchen
+
+  - id: blatt
+    canonical: "Blatt"
+    category: portion
+    synonyms:
+      - blatt
+      - blätter
+      - blaetter
+      - blättchen
+      - blaettchen
+      - blattl
+      - blättl
+
+  - id: zehe
+    canonical: "Zehe"
+    category: portion
+    synonyms:
+      - zehe
+      - zehen
+      - zecherl
+      - zeheln
+      - knoblauchzehe
+      - knoblauchzehen
+
+  - id: knolle
+    canonical: "Knolle"
+    category: portion
+    synonyms:
+      - knolle
+      - knollen
+      - knollchen
+      - knöllchen
+      - knollerl
+
+  - id: stange
+    canonical: "Stange"
+    category: portion
+    synonyms:
+      - stange
+      - stangen
+      - stangerl
+      - stängel
+      - staengel
+      - stengel
+      - stängerl
+
+  - id: glas
+    canonical: "Glas"
+    category: container
+    synonyms:
+      - glas
+      - glaes
+      - gläser
+      - glaeser
+      - gläschen
+      - glaeschen
+      - glasl
+      - glaserl
+
+  - id: becher
+    canonical: "Becher"
+    category: container
+    synonyms:
+      - becher
+      - becherchen
+      - becherl
+      - becherlein
+      - bechern
+      - becher voll
+
+  - id: tasse
+    canonical: "Tasse"
+    category: container
+    synonyms:
+      - tasse
+      - tassen
+      - tässchen
+      - taesschen
+      - tässle
+      - tasserl
+      - kaffeetasse
+      - teetasse
+
+  - id: dose
+    canonical: "Dose"
+    category: container
+    synonyms:
+      - dose
+      - dosen
+      - doserl
+      - büchse
+      - buechse
+      - konservendose
+      - konserve
+
+  - id: flasche
+    canonical: "Flasche"
+    category: container
+    synonyms:
+      - flasche
+      - flaschen
+      - flascherl
+      - flaschl
+      - fasche
+      - flasch
+
+  - id: packung
+    canonical: "Packung"
+    category: container
+    synonyms:
+      - packung
+      - packungen
+      - packerl
+      - packet
+      - paket
+
+  - id: paeckchen
+    canonical: "Päckchen"
+    category: container
+    synonyms:
+      - päckchen
+      - päckchen
+      - paekchen
+      - päckerl
+      - paechkchen
+      - päck
+
+  - id: beutel
+    canonical: "Beutel"
+    category: container
+    synonyms:
+      - beutel
+      - beuteln
+      - beutelchen
+      - beutel voll
+      - säckchen
+      - saeckchen
+      - sack
+
+  - id: tuete
+    canonical: "Tüte"
+    category: container
+    synonyms:
+      - tüte
+      - tuete
+      - tüten
+      - tueten
+      - tüterl
+      - tueterl
+      - plastiktüte
+      - papiertuete
+
+  - id: karton
+    canonical: "Karton"
+    category: container
+    synonyms:
+      - karton
+      - kartons
+      - kasten
+      - kistchen
+      - kartonage
+      - schachtel
+      - schachteln
+
+  - id: tube
+    canonical: "Tube"
+    category: container
+    synonyms:
+      - tube
+      - tuben
+      - tuberl
+      - tubes
+      - zirbentübe
+
+  - id: schale
+    canonical: "Schale"
+    category: container
+    synonyms:
+      - schale
+      - schalen
+      - schälchen
+      - schaelchen
+      - schael
+      - schüs
+      - schüssel
+      - schuessel
+      - schüsselchen
+      - schueserl
+
+  - id: teller
+    canonical: "Teller"
+    category: container
+    synonyms:
+      - teller
+      - teller voll
+      - tellerchen
+      - tellerl
+      - tellern
+
+  - id: schaelchen
+    canonical: "Schälchen"
+    category: container
+    synonyms:
+      - schälchen
+      - schaelchen
+      - schälchen voll
+      - schälcherl
+      - schälcherln
+
+  - id: schuessel
+    canonical: "Schüssel"
+    category: container
+    synonyms:
+      - schüssel
+      - schuessel
+      - schüsseln
+      - schuesseln
+      - schüsselchen
+      - schuesselerl
+      - schüssel voll
+
+# -------------------------------------------------------------
+# Erweiterung:
+#   • Neue Begriffe einfach als weiteres Objekt anfügen.
+#   • Der Parser sucht wortweise (Token) in `synonyms`
+#     → gibt `id` weiter → Mengenlogik/DB verknüpfen.
+# -------------------------------------------------------------

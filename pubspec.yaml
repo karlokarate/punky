@@ -1,0 +1,101 @@
+name: diabetes_kids_app
+description: Diabetes-Kinder-App mit Nightscout, Alarm und Hintergrundservice
+publish_to: 'none'
+version: 1.4.0+104
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Lokalisierung
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.2
+
+  # Netzwerk
+  http: ^1.4.0
+
+  speech_to_text: 7.1.0
+
+  # Notifications
+  awesome_notifications: ^0.10.1
+
+  # Hintergrundtasks
+  workmanager: ^0.8.0
+
+  # Speicherung & Dateien
+  shared_preferences: ^2.5.3
+  path_provider: ^2.1.5
+  flutter_secure_storage: ^9.2.4
+  sqflite: ^2.4.2
+
+  # Medien & Berechtigungen
+  permission_handler: ^12.0.1
+  record: ^6.0.0
+  image_picker: ^1.1.2
+  local_auth: ^2.3.0
+  camera: ^0.10.5
+  ffi: ^2.1.0
+
+  # Firebase
+  firebase_core: ^3.15.1
+  firebase_messaging: ^15.2.9
+
+  # Event-Fluss & Animation
+  rxdart: ^0.28.0
+  event_bus: ^2.0.1
+  yaml: ^3.1.3
+  lottie: ^3.3.1
+  fl_chart: ^1.0.0
+  async: ^2.13.0
+  synchronized: ^3.4.0
+
+  # Utils & Basisklassen
+  dart_levenshtein: ^1.0.1
+  string_similarity: ^2.1.1
+  path: any
+  flutter_local_notifications: any
+  vibration: any
+  just_audio: any
+  hive: any
+  tflite_flutter: any
+  meta: any
+  provider: any
+  url_launcher: any
+
+  # Offline-Spracherkennung via Whisper FFI
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mockito: ^5.4.2
+  fake_async: ^1.3.1
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+
+flutter:
+  generate: true
+  uses-material-design: true
+
+  assets:
+    - lib/assets/config/settings_schema.yaml
+    - lib/assets/config/portion_units_de.yaml
+    - lib/assets/db/products.sqlite
+    - assets/whisper/ggml-tiny.bin
+    - lib/l10n/
+    - assets/config/gpt_rules.yaml
+    - assets/lottie/
+
+dependency_overrides:
+  archive: ^4.0.7
+  permission_handler: ^12.0.1

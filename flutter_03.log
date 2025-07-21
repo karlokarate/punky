@@ -1,0 +1,104 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter pub get
+
+## exception
+
+FileSystemException: FileSystemException: Failed to decode data using encoding 'utf-8', path = 'C:\Users\admin\StudioProjects\untitled1\android\gradle.properties'
+
+```
+#0      _File._tryDecode (dart:io/file_impl.dart:707:7)
+#1      _File.readAsStringSync (dart:io/file_impl.dart:718:7)
+#2      ForwardingFile.readAsStringSync (package:file/src/forwarding/forwarding_file.dart:99:16)
+#3      ErrorHandlingFile.readAsStringSync.<anonymous closure> (package:flutter_tools/src/base/error_handling_io.dart:212:22)
+#4      _runSync (package:flutter_tools/src/base/error_handling_io.dart:549:14)
+#5      ErrorHandlingFile.readAsStringSync (package:flutter_tools/src/base/error_handling_io.dart:211:12)
+#6      isAppUsingAndroidX (package:flutter_tools/src/android/gradle.dart:1078:21)
+#7      _writeAndroidPluginRegistrant (package:flutter_tools/src/flutter_plugins.dart:433:17)
+#8      injectPlugins (package:flutter_tools/src/flutter_plugins.dart:1269:11)
+<asynchronous suspension>
+#9      FlutterProject.ensureReadyForPlatformSpecificTooling (package:flutter_tools/src/project.dart:398:5)
+<asynchronous suspension>
+#10     PackagesGetCommand.runCommand (package:flutter_tools/src/commands/packages.dart:383:7)
+<asynchronous suspension>
+#11     FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1563:27)
+<asynchronous suspension>
+#12     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#13     CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#14     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:494:9)
+<asynchronous suspension>
+#15     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#16     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:431:5)
+<asynchronous suspension>
+#17     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:98:11)
+<asynchronous suspension>
+#18     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#19     main (package:flutter_tools/executable.dart:102:3)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.32.6, on Microsoft Windows [Version 10.0.26100.4652], locale de-DE) [520ms]
+    [32m•[39m Flutter version 3.32.6 on channel stable at C:\flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision 077b4a4ce1 (8 days ago), 2025-07-08 13:31:08 -0700
+    [32m•[39m Engine revision 72f2b18bb0
+    [32m•[39m Dart version 3.8.1
+    [32m•[39m DevTools version 2.45.1
+
+[32m[✓][39m Windows Version (11 Home 64-bit, 24H2, 2009) [1.158ms]
+
+[32m[✓][39m Android toolchain - develop for Android devices (Android SDK version 35.0.1) [2,1s]
+    [32m•[39m Android SDK at C:\Users\admin\AppData\Local\Android\sdk
+    [32m•[39m Platform android-35, build-tools 35.0.1
+    [32m•[39m Java binary at: C:\Program Files\Android\Android Studio\jbr\bin\java
+      This is the JDK bundled with the latest Android Studio installation on this machine.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    [32m•[39m Java version OpenJDK Runtime Environment (build 21.0.6+-13368085-b895.109)
+    [32m•[39m All Android licenses accepted.
+
+[31m[✗][39m Chrome - develop for the web (Cannot find Chrome executable at .\Google\Chrome\Application\chrome.exe) [216ms]
+    [33m![39m Cannot find Chrome. Try setting CHROME_EXECUTABLE to a Chrome executable.
+
+[32m[✓][39m Visual Studio - develop Windows apps (Visual Studio Build Tools 2022 17.14.7) [215ms]
+    [32m•[39m Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+    [32m•[39m Visual Studio Build Tools 2022 version 17.14.36221.1
+    [32m•[39m Windows 10 SDK version 10.0.26100.0
+
+[32m[✓][39m Android Studio (version 2024.3.2) [108ms]
+    [32m•[39m Android Studio at C:\Program Files\Android\Android Studio
+    [32m•[39m Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    [32m•[39m Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    [32m•[39m Java version OpenJDK Runtime Environment (build 21.0.6+-13368085-b895.109)
+
+[32m[✓][39m IntelliJ IDEA Ultimate Edition (version 2025.1) [106ms]
+    [32m•[39m IntelliJ at C:\Program Files\JetBrains\IntelliJ IDEA 2025.1.3
+    [32m•[39m Flutter plugin version 86.0.2
+    [32m•[39m Dart plugin version 251.26927.39
+
+[32m[✓][39m VS Code (version 1.102.0) [10ms]
+    [32m•[39m VS Code at C:\Users\admin\AppData\Local\Programs\Microsoft VS Code
+    [32m•[39m Flutter extension can be installed from:
+      🔨 https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter
+
+[32m[✓][39m Connected device (2 available) [103ms]
+    [32m•[39m Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.26100.4652]
+    [32m•[39m Edge (web)        • edge    • web-javascript • Microsoft Edge 138.0.3351.83
+    [33m![39m Device RFCM90984WW is offline.
+
+[32m[✓][39m Network resources [411ms]
+    [32m•[39m All expected network resources are available.
+
+[33m![39m Doctor found issues in 1 category.
+```

@@ -1,0 +1,18 @@
+# Flutter Build + Cache
+build/
+.dart_tool/
+.packages
+
+# Editor
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Native Output
+*.so
+*.apk
+*.bin
+*.dill

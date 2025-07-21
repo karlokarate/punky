@@ -1,0 +1,100 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter gen-l10n
+
+## exception
+
+PathNotFoundException: PathNotFoundException: Cannot open file, path = 'lib/generated/untranslated.txt' (OS Error: Das System kann den angegebenen Pfad nicht finden.
+, errno = 3)
+
+```
+#0      _File.throwIfError (dart:io/file_impl.dart:782:7)
+#1      _File.openSync (dart:io/file_impl.dart:575:5)
+#2      _File.writeAsBytesSync (dart:io/file_impl.dart:747:31)
+#3      _File.writeAsStringSync (dart:io/file_impl.dart:775:5)
+#4      ForwardingFile.writeAsStringSync (package:file/src/forwarding/forwarding_file.dart:150:16)
+#5      ErrorHandlingFile.writeAsStringSync.<anonymous closure> (package:flutter_tools/src/base/error_handling_io.dart:254:22)
+#6      _runSync (package:flutter_tools/src/base/error_handling_io.dart:549:14)
+#7      ErrorHandlingFile.writeAsStringSync (package:flutter_tools/src/base/error_handling_io.dart:253:5)
+#8      LocalizationsGenerator._generateUntranslatedMessagesFile (package:flutter_tools/src/localizations/gen_l10n.dart:1550:32)
+#9      LocalizationsGenerator.writeOutputFiles (package:flutter_tools/src/localizations/gen_l10n.dart:1503:7)
+#10     generateLocalizations (package:flutter_tools/src/localizations/gen_l10n.dart:80:13)
+#11     GenerateLocalizationsCommand.runCommand (package:flutter_tools/src/commands/generate_localizations.dart:277:11)
+#12     FlutterCommand.verifyThenRunCommand (package:flutter_tools/src/runner/flutter_command.dart:1909:12)
+<asynchronous suspension>
+#13     FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1563:27)
+<asynchronous suspension>
+#14     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#15     CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#16     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:494:9)
+<asynchronous suspension>
+#17     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#18     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:431:5)
+<asynchronous suspension>
+#19     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:98:11)
+<asynchronous suspension>
+#20     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#21     main (package:flutter_tools/executable.dart:102:3)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.32.4, on Microsoft Windows [Version 10.0.26100.4484], locale de-DE) [390ms]
+    [32m•[39m Flutter version 3.32.4 on channel stable at C:\flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision 6fba2447e9 (3 weeks ago), 2025-06-12 19:03:56 -0700
+    [32m•[39m Engine revision 8cd19e509d
+    [32m•[39m Dart version 3.8.1
+    [32m•[39m DevTools version 2.45.1
+
+[32m[✓][39m Windows Version (11 Home 64-bit, 24H2, 2009) [1.037ms]
+
+[33m[!][39m Android toolchain - develop for Android devices (Android SDK version 35.0.1) [331ms]
+    [32m•[39m Android SDK at C:\Users\admin\AppData\Local\Android\sdk
+    [31m✗[39m cmdline-tools component is missing.
+      Try installing or updating Android Studio.
+      Alternatively, download the tools from https://developer.android.com/studio#command-line-tools-only and make sure to set the ANDROID_HOME environment variable.
+      See https://developer.android.com/studio/command-line for more details.
+    [31m✗[39m Android license status unknown.
+      Run `flutter doctor --android-licenses` to accept the SDK licenses.
+      See https://flutter.dev/to/windows-android-setup for more details.
+
+[31m[✗][39m Chrome - develop for the web (Cannot find Chrome executable at .\Google\Chrome\Application\chrome.exe) [173ms]
+    [33m![39m Cannot find Chrome. Try setting CHROME_EXECUTABLE to a Chrome executable.
+
+[32m[✓][39m Visual Studio - develop Windows apps (Visual Studio Build Tools 2022 17.14.7) [172ms]
+    [32m•[39m Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+    [32m•[39m Visual Studio Build Tools 2022 version 17.14.36221.1
+    [32m•[39m Windows 10 SDK version 10.0.26100.0
+
+[32m[✓][39m Android Studio (version 2024.3.2) [12ms]
+    [32m•[39m Android Studio at C:\Program Files\Android\Android Studio
+    [32m•[39m Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    [32m•[39m Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    [32m•[39m Java version OpenJDK Runtime Environment (build 21.0.6+-13368085-b895.109)
+
+[32m[✓][39m VS Code (version 1.101.2) [10ms]
+    [32m•[39m VS Code at C:\Users\admin\AppData\Local\Programs\Microsoft VS Code
+    [32m•[39m Flutter extension can be installed from:
+      🔨 https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter
+
+[32m[✓][39m Connected device (2 available) [124ms]
+    [32m•[39m Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.26100.4484]
+    [32m•[39m Edge (web)        • edge    • web-javascript • Microsoft Edge 138.0.3351.65
+
+[32m[✓][39m Network resources [402ms]
+    [32m•[39m All expected network resources are available.
+
+[33m![39m Doctor found issues in 2 categories.
+```
